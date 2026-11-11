@@ -4,9 +4,12 @@ import Card from './Card.jsx';
 import Modal from './Modal.jsx';
 import Instructions from './Instructions.jsx';
 import AuthorsNote, { REPO_URL } from './AuthorsNote.jsx';
+import Reach from './Reach.jsx';
+import Details from './Details.jsx';
+import { applyDraft } from './contact.js';
 import { demoContacts } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress } from './bag.js';
-import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, redirectUri } from './google.js';
+import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, redirectUri } from './google.js';
 
 const UNDO_DEPTH = 3; // how many recent swipes can be undone
 
@@ -39,7 +42,8 @@ export default function App() {
   const [exitDir, setExitDir] = useState(1);
   const [notice, setNotice] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const [popup, setPopup] = useState(null); // 'help' | 'note'
+  const [popup, setPopup] = useState(null); // 'help' | 'note' | { kind: 'reach' | 'details', id, edit }
+  const [theme, setTheme] = useState(() => (load('cc.theme') === 'night' ? 'night' : 'day'));
   const closePopup = useCallback(() => setPopup(null), []);
 
   const historyRef = useRef([]);
@@ -106,7 +110,13 @@ export default function App() {
     const gone = new Set([...(load('cc.demo.deleted') || []), ...(load('cc.pending.demo') || [])]);
     save('cc.demo.deleted', [...gone]);
     const starred = new Set(load('cc.demo.starred') || []);
-    begin('demo', demoContacts.filter((c) => !gone.has(c.id)).map((c) => ({ ...c, starred: starred.has(c.id) })));
+    const edits = load('cc.demo.edits') || {};
+    begin(
+      'demo',
+      demoContacts
+        .filter((c) => !gone.has(c.id))
+        .map((c) => ({ ...(edits[c.id] ? applyDraft(c, edits[c.id]) : c), starred: starred.has(c.id) }))
+    );
   }, [begin]);
 
   const startGoogle = useCallback(async () => {
@@ -138,6 +148,13 @@ export default function App() {
     else if (load('cc.mode') === 'demo') startDemo();
   }, [startDemo, startGoogle]);
 
+  // Day or night mode, remembered on this device.
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'night' ? '#1B1A31' : '#F2E3C6');
+    save('cc.theme', theme);
+  }, [theme]);
+
   // Save progress after every change.
   useEffect(() => {
     if (mode && bag) save(`cc.bag.${mode}`, bag);
@@ -159,9 +176,14 @@ export default function App() {
   }, [flushDeletes]);
 
   const act = useCallback(
-    (action) => {
+    (action, confirmed = false) => {
       const top = bag && byId.get(bag.hand[0]);
       if (!top) return;
+      // Deleting a favorite asks first.
+      if (action === 'delete' && top.starred && !confirmed) {
+        setPopup({ kind: 'confirm', id: top.id });
+        return;
+      }
       setExitDir(action === 'keep' ? 1 : -1);
       setBag((b) => swipe(b, top.id, action));
       if (action === 'delete') setContacts((cs) => cs.filter((c) => c.id !== top.id));
@@ -207,6 +229,26 @@ export default function App() {
     }
   }, [bag, byId]);
 
+  // Save edits and tags from the details screen.
+  const saveContact = useCallback(async (contact, draft) => {
+    const swap = (next) => setContacts((cs) => cs.map((c) => (c.id === contact.id ? { ...next, starred: c.starred } : c)));
+    swap(applyDraft(contact, draft));
+    if (modeRef.current === 'demo') {
+      save('cc.demo.edits', { ...(load('cc.demo.edits') || {}), [contact.id]: draft });
+      return;
+    }
+    try {
+      swap(await updateContact(contact, draft));
+    } catch (err) {
+      swap(contact);
+      setNotice(`Could not save changes to "${contact.name}". (${err.message})`);
+    }
+  }, []);
+
+  const topId = bag?.hand[0];
+  const openReach = useCallback(() => topId && setPopup({ kind: 'reach', id: topId }), [topId]);
+  const openDetails = useCallback(() => topId && setPopup({ kind: 'details', id: topId }), [topId]);
+
   // "+10", never going past the daily cap.
   const more = useCallback(() => {
     setBag((b) => {
@@ -221,13 +263,15 @@ export default function App() {
     const onKey = (e) => {
       if (e.key === 'ArrowRight') act('keep');
       else if (e.key === 'ArrowLeft') act('delete');
+      else if (e.key === 'ArrowUp') openDetails();
+      else if (e.key === 'Enter') openReach();
       else if (e.key === 'Backspace' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z')) undo();
       else return;
       e.preventDefault();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, popup, act, undo]);
+  }, [screen, popup, act, undo, openDetails, openReach]);
 
   const leave = () => {
     flushDeletes();
@@ -241,15 +285,36 @@ export default function App() {
   };
 
   const resetDemo = () => {
-    ['cc.demo.deleted', 'cc.demo.starred', 'cc.bag.demo', 'cc.pending.demo'].forEach((k) => localStorage.removeItem(k));
+    ['cc.demo.deleted', 'cc.demo.starred', 'cc.demo.edits', 'cc.bag.demo', 'cc.pending.demo'].forEach((k) => localStorage.removeItem(k));
     setMenuOpen(false);
     begin('demo', demoContacts.map((c) => ({ ...c, starred: false })));
   };
 
   // ---------- screens ----------
 
+  const popupContact = popup?.id ? byId.get(popup.id) : null;
   const popups = (
     <AnimatePresence>
+      {popup?.kind === 'confirm' && popupContact && (
+        <Modal key="confirm" title="Delete a favorite?" onClose={closePopup}>
+          <p>Are you sure you want to delete a favorite contact?</p>
+          <p className="confirm-name">{popupContact.name}</p>
+          <div className="btn-row">
+            <button className="btn btn-small" onClick={closePopup}>Keep</button>
+            <button className="btn btn-small btn-danger" onClick={() => { closePopup(); act('delete', true); }}>Delete</button>
+          </div>
+        </Modal>
+      )}
+      {popup?.kind === 'reach' && popupContact && (
+        <Modal key="reach" title={popupContact.name} onClose={closePopup}>
+          <Reach contact={popupContact} onAddDetails={() => setPopup({ kind: 'details', id: popupContact.id, edit: true })} />
+        </Modal>
+      )}
+      {popup?.kind === 'details' && popupContact && (
+        <Modal key="details" title={popupContact.name} onClose={closePopup}>
+          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} />
+        </Modal>
+      )}
       {popup === 'help' && (
         <Modal key="help" title="Instructions" onClose={closePopup}>
           <Instructions />
@@ -297,7 +362,7 @@ export default function App() {
           <motion.div className="fineprint" variants={rise}>
             <p>Your contacts stay between this browser and Google. Nothing is sent anywhere else.</p>
             <p>
-              I'm not saving anything, but I'm also not well versed in security. I did my best to make sure that
+              I'm not saving any of your data, but I'm also not well versed in security. I did my best to make sure that
               anything that is saved stays locally on your device. If you know this stuff and see I messed up, please{' '}
               <a href={`${REPO_URL}/issues`} target="_blank" rel="noreferrer">let me know</a>.
             </p>
@@ -343,6 +408,9 @@ export default function App() {
         {menuOpen && (
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
+            <button role="menuitem" onClick={() => { setMenuOpen(false); setTheme(theme === 'night' ? 'day' : 'night'); }}>
+              {theme === 'night' ? 'Day mode' : 'Night mode'}
+            </button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('help'); }}>Instructions</button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('note'); }}>Author's note</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}
@@ -358,7 +426,7 @@ export default function App() {
       <section className="stack">
         <AnimatePresence custom={exitDir}>
           {visible.map((c) => (
-            <Card key={c.id} contact={c} isTop={c.id === top.id} exitDir={exitDir} onSwipe={act} />
+            <Card key={c.id} contact={c} isTop={c.id === top.id} exitDir={exitDir} onSwipe={act} onTap={openReach} onDetails={openDetails} />
           ))}
         </AnimatePresence>
 

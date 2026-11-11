@@ -1,7 +1,10 @@
+import { useRef } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { tagsOf } from './contact.js';
 
 const SWIPE_DISTANCE = 110; // px the card must travel to count as a swipe
 const SWIPE_VELOCITY = 700; // or a fast flick
+const UP_DISTANCE = 80; // px upward to open details
 
 // Avatar colours from the creator palette: [background, text]
 const COLORS = [
@@ -44,7 +47,8 @@ const variants = {
   exit: (dir) => ({ x: dir * (window.innerWidth / 2 + 320), opacity: 0, transition: { duration: 0.3 } }),
 };
 
-export default function Card({ contact, isTop, exitDir, onSwipe }) {
+export default function Card({ contact, isTop, exitDir, onSwipe, onTap, onDetails }) {
+  const dragged = useRef(false);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-220, 220], [-12, 12]);
   const keepOpacity = useTransform(x, [30, 120], [0, 1]);
@@ -55,19 +59,28 @@ export default function Card({ contact, isTop, exitDir, onSwipe }) {
     ['Email', contact.emails[0], contact.emails.length - 1],
     ['Work', [contact.title, contact.org].filter((v) => v && v !== contact.name).join(', '), 0],
     ['Birthday', birthdayText(contact.birthday), 0],
+    ['Met', [tagsOf(contact.howMet).join(', '), contact.metYear].filter(Boolean).join(' · '), 0],
   ].filter(([, value]) => value);
 
   return (
     <motion.article
       className={`card ${isTop ? 'is-top' : ''}`}
       style={{ x, rotate }}
-      drag={isTop ? 'x' : false}
+      drag={isTop}
+      dragDirectionLock
       dragSnapToOrigin
-      dragElastic={0.9}
+      dragConstraints={{ top: -120, bottom: 0 }}
+      dragElastic={{ top: 0.25, bottom: 0.08 }}
+      onPointerDown={() => { dragged.current = false; }}
+      onDragStart={() => { dragged.current = true; }}
       onDragEnd={(_, info) => {
-        if (info.offset.x > SWIPE_DISTANCE || info.velocity.x > SWIPE_VELOCITY) onSwipe('keep');
-        else if (info.offset.x < -SWIPE_DISTANCE || info.velocity.x < -SWIPE_VELOCITY) onSwipe('delete');
+        const { offset, velocity } = info;
+        const sideways = Math.abs(offset.x) > Math.abs(offset.y);
+        if (sideways && (offset.x > SWIPE_DISTANCE || velocity.x > SWIPE_VELOCITY)) onSwipe('keep');
+        else if (sideways && (offset.x < -SWIPE_DISTANCE || velocity.x < -SWIPE_VELOCITY)) onSwipe('delete');
+        else if (!sideways && (offset.y < -UP_DISTANCE || velocity.y < -SWIPE_VELOCITY)) onDetails();
       }}
+      onClick={() => { if (isTop && !dragged.current) onTap(); }}
       variants={variants}
       custom={exitDir}
       initial="enter"
@@ -89,7 +102,7 @@ export default function Card({ contact, isTop, exitDir, onSwipe }) {
         {contact.photo ? (
           <img src={contact.photo} alt="" draggable="false" referrerPolicy="no-referrer" />
         ) : (
-          <span>{initials(contact.name)}</span>
+          <span>{contact.hasName || contact.org ? initials(contact.name) : '?'}</span>
         )}
       </div>
 
@@ -108,6 +121,13 @@ export default function Card({ contact, isTop, exitDir, onSwipe }) {
         ))}
         {rows.length === 0 && <p className="empty-rows">No other details saved.</p>}
       </dl>
+
+      {isTop && (
+        <button className="card-hint" onClick={(e) => { e.stopPropagation(); onDetails(); }}>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14l6-6 6 6" /></svg>
+          Swipe up for details
+        </button>
+      )}
     </motion.article>
   );
 }

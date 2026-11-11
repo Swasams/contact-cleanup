@@ -20,7 +20,7 @@ export default function AuthorsNote() {
         on your device.
       </p>
       <p>
-        I'm not saving anything, but I'm also not well versed in security. I did my best to make sure that anything
+        I'm not saving any of your data, but I'm also not well versed in security. I did my best to make sure that anything
         that is saved stays locally on your device. If you know this stuff and see I messed up, please{' '}
         <a href={`${REPO_URL}/issues`} target="_blank" rel="noreferrer">let me know</a>.
       </p>

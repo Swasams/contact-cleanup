@@ -9,13 +9,20 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Swipe deck:** swipe right (or tap the green button) to keep, swipe left (or tap the red button) to delete.
 - **Undo:** the undo button takes back your last 3 swipes, keeps or deletes. A delete is only sent to Google once it can no longer be undone: when 3 newer swipes have happened, or when you leave the app.
 - **Star:** the star button marks the contact as a favorite. In Google Contacts this is the Starred group.
-- **On a computer:** right arrow keeps, left arrow deletes, Backspace or Ctrl+Z undoes.
+- **Tap a card** to message, call or email the person (Messages, WhatsApp, phone, email, plus Instagram, TikTok and Discord once you add a handle).
+- **Swipe a card up** for details: quick tags for how and when you met, and an Edit button for the contact's fields. Tags and handles are saved to Google as custom fields.
+- **Deleting a favorite** asks you to confirm first.
+- **Night mode** in the menu.
+- **Instructions and Author's note** on the welcome screen and in the menu.
+- **On a computer:** right arrow keeps, left arrow deletes, up arrow opens details, Enter opens ways to reach, Backspace or Ctrl+Z undoes.
 - **10 a day:** the first open of the day deals 10 cards. Unfinished cards come first the next day. Skipped days do not stack up.
 - **+10:** the +10 button deals another 10 whenever you want, up to 100 in a day. At 100 the app tells you to stop.
 - **Bag system:** nobody repeats until every contact has been shown once. Then the bag refills, reshuffles, and the next cycle starts.
 - **Demo mode:** made-up contacts, so anyone can try it without signing in.
 
-Not built yet: choosing which fields show on the card, tap to message, swipe up for details and editing, tagging, and the gift prompts (the prompt list is already in `src/prompts.js`).
+Not built yet: choosing which fields show on the card, and the gift prompts (the prompt list is already in `src/prompts.js`).
+
+Not yet tested against a real Google account: sign-in, deleting, starring, and saving edits. All of it is tested in demo mode.
 
 ## 1. Run it on your computer
 
@@ -84,6 +91,12 @@ There is no server. Your contacts travel only between your browser and Google. T
 | `src/google.js` | Google sign-in and the People API calls. |
 | `src/App.jsx` | Screens and swipe handling. |
 | `src/Card.jsx` | The contact card and its drag behaviour. |
+| `src/Details.jsx` | Swipe-up details: tags, year, edit form. |
+| `src/Reach.jsx` | Tap: ways to message or call. |
+| `src/contact.js` | Shared contact helpers, tag list, message links. |
+| `src/Modal.jsx` | The popup used everywhere. |
+| `src/Instructions.jsx` | The Instructions popup text. |
+| `src/AuthorsNote.jsx` | The Author's note text. Edit your words here. |
 | `src/prompts.js` | The gift prompt ladder (for the gift screen, not built yet). |
 | `src/demo.js` | Made-up contacts for demo mode. |
 | `src/styles.css` | All styling. Colours and fonts are variables at the top. |

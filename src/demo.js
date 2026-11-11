@@ -1,3 +1,5 @@
+import { withDisplayName } from './contact.js';
+
 // Made-up contacts for demo mode. Nothing here is a real person or number.
 const raw = [
   ['Priya (college roommate)', '(201) 555-0101', 'priya.demo@example.com', '', { year: 1998, month: 3, day: 14 }],
@@ -26,15 +28,31 @@ const raw = [
   ['Zoe Marchetti', '(201) 555-0123', 'zoe.demo@example.com', '', { year: 1994, month: 7, day: 3 }],
 ];
 
-export const demoContacts = raw.map(([name, phone, email, org, birthday], i) => ({
-  id: `demo/${i}`,
-  name: name || org || email || phone || 'No name saved',
-  hasName: !!name,
-  phones: phone ? [phone] : [],
-  emails: email ? [email] : [],
-  org,
-  title: '',
-  birthday,
-  photo: null,
-  starred: false,
-}));
+// A few demo people come with tags and handles so the details and message screens have something to show.
+const extras = {
+  0: { howMet: 'School', metYear: '2016', instagram: 'priya.demo' },
+  6: { howMet: 'Work', metYear: '2021', discord: 'devon.demo' },
+  15: { howMet: 'Friend of a friend', instagram: 'kiki.demo', tiktok: 'kiki.demo' },
+  22: { howMet: 'Dating', metYear: '2023' },
+};
+
+export const demoContacts = raw.map(([name, phone, email, org, birthday], i) =>
+  withDisplayName({
+    id: `demo/${i}`,
+    realName: name,
+    phones: phone ? [phone] : [],
+    emails: email ? [email] : [],
+    org,
+    title: '',
+    birthday,
+    photo: null,
+    starred: false,
+    notes: '',
+    howMet: '',
+    metYear: '',
+    instagram: '',
+    tiktok: '',
+    discord: '',
+    ...extras[i],
+  })
+);

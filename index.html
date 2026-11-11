@@ -15,6 +15,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Who Dis?</title>
+    <script>
+      try { if (JSON.parse(localStorage.getItem('cc.theme')) === 'night') document.documentElement.dataset.theme = 'night'; } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -56,6 +56,14 @@ export default function Instructions() {
         </li>
       </ul>
 
+      <h3>On the card</h3>
+      <ul className="plain">
+        <li><strong>Tap the card</strong> to message, call or email the person. On a computer, press Enter.</li>
+        <li><strong>Swipe the card up</strong> for all their details. On a computer, press the up arrow key.</li>
+        <li>In details, tap the tags to record how and when you met. Tap <strong>Edit</strong> to change their name, number and the rest.</li>
+        <li>Instagram, TikTok and Discord show up as ways to reach someone once you add their handle in details.</li>
+      </ul>
+
       <h3>How the days work</h3>
       <ul className="plain">
         <li>You get {DAILY} contacts a day. Cards you do not finish come first the next day.</li>
@@ -67,11 +75,12 @@ export default function Instructions() {
       <ul className="plain">
         <li>A delete can be undone until 3 newer swipes have happened, or until you leave the app or switch tabs.</li>
         <li>After that the contact is removed from your Google Contacts.</li>
+        <li>Deleting a favorite always asks you to confirm first.</li>
       </ul>
 
       <h3>The menu</h3>
       <ul className="plain">
-        <li>The button in the top corner lets you sign out, open these instructions, or read the author's note.</li>
+        <li>The button in the top corner lets you switch between day and night mode, sign out, open these instructions, or read the author's note.</li>
       </ul>
     </>
   );

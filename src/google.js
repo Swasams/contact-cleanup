@@ -1,13 +1,15 @@
 // Google sign-in + People API. Everything runs in the browser: the access
 // token and the contacts never touch any server other than Google's.
 
+import { CUSTOM_KEYS, draftOf, withDisplayName } from './contact.js';
+
 export const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const SCOPE = 'https://www.googleapis.com/auth/contacts';
 const API = 'https://people.googleapis.com/v1/';
 const TOKEN_KEY = 'cc.token';
 const STATE_KEY = 'cc.oauth_state';
-const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships';
+const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships,userDefined,biographies';
 const STARRED = 'contactGroups/starred'; // Google's built-in "Starred" group = favorites
 
 export class AuthError extends Error {}
@@ -86,24 +88,26 @@ async function api(path, opts = {}) {
 }
 
 export function normalize(p) {
-  const name = p.names?.[0]?.displayName || '';
   const org = p.organizations?.[0] || {};
-  const b = p.birthdays?.find((x) => x.date)?.date || null;
-  const photo = p.photos?.find((x) => !x.default)?.url || null;
-  const phones = (p.phoneNumbers || []).map((x) => x.value).filter(Boolean);
-  const emails = (p.emailAddresses || []).map((x) => x.value).filter(Boolean);
-  return {
+  const custom = Object.fromEntries((p.userDefined || []).map((u) => [u.key, u.value]));
+  return withDisplayName({
     id: p.resourceName,
-    name: name || org.name || emails[0] || phones[0] || 'No name saved',
-    hasName: !!name,
-    phones,
-    emails,
+    realName: p.names?.[0]?.displayName || '',
+    phones: (p.phoneNumbers || []).map((x) => x.value).filter(Boolean),
+    emails: (p.emailAddresses || []).map((x) => x.value).filter(Boolean),
     org: org.name || '',
     title: org.title || '',
-    birthday: b,
-    photo,
+    birthday: p.birthdays?.find((x) => x.date)?.date || null,
+    photo: p.photos?.find((x) => !x.default)?.url || null,
     starred: (p.memberships || []).some((m) => m.contactGroupMembership?.contactGroupResourceName === STARRED),
-  };
+    notes: p.biographies?.[0]?.value || '',
+    howMet: custom[CUSTOM_KEYS.howMet] || '',
+    metYear: custom[CUSTOM_KEYS.metYear] || '',
+    instagram: custom[CUSTOM_KEYS.instagram] || '',
+    tiktok: custom[CUSTOM_KEYS.tiktok] || '',
+    discord: custom[CUSTOM_KEYS.discord] || '',
+    raw: p, // the original record, needed to save edits without losing anything
+  });
 }
 
 export async function fetchAllContacts(onProgress) {
@@ -132,4 +136,54 @@ export function setStarred(id, starred) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(starred ? { resourceNamesToAdd: [id] } : { resourceNamesToRemove: [id] }),
   });
+}
+
+// Save edits from the details screen. Only the parts that actually changed are
+// sent, so untouched fields (and anything this app does not know about) stay as they are.
+export async function updateContact(contact, draft) {
+  const before = draftOf(contact);
+  const raw = contact.raw || {};
+  const changed = (...keys) => keys.some((k) => (draft[k] || '') !== (before[k] || ''));
+  const body = { etag: raw.etag };
+  const mask = [];
+
+  if (changed('realName')) {
+    mask.push('names');
+    body.names = draft.realName.trim() ? [{ unstructuredName: draft.realName.trim() }] : [];
+  }
+  if (changed('phone')) {
+    mask.push('phoneNumbers');
+    const rest = (raw.phoneNumbers || []).slice(1).map(({ value, type }) => ({ value, type }));
+    body.phoneNumbers = [...(draft.phone.trim() ? [{ value: draft.phone.trim(), type: raw.phoneNumbers?.[0]?.type }] : []), ...rest];
+  }
+  if (changed('email')) {
+    mask.push('emailAddresses');
+    const rest = (raw.emailAddresses || []).slice(1).map(({ value, type }) => ({ value, type }));
+    body.emailAddresses = [...(draft.email.trim() ? [{ value: draft.email.trim(), type: raw.emailAddresses?.[0]?.type }] : []), ...rest];
+  }
+  if (changed('org', 'title')) {
+    mask.push('organizations');
+    const rest = (raw.organizations || []).slice(1).map(({ name, title, type }) => ({ name, title, type }));
+    body.organizations = [...(draft.org.trim() || draft.title.trim() ? [{ name: draft.org.trim(), title: draft.title.trim() }] : []), ...rest];
+  }
+  if (changed('notes')) {
+    mask.push('biographies');
+    body.biographies = draft.notes.trim() ? [{ value: draft.notes, contentType: 'TEXT_PLAIN' }] : [];
+  }
+  if (changed(...Object.keys(CUSTOM_KEYS))) {
+    mask.push('userDefined');
+    const ours = new Set(Object.values(CUSTOM_KEYS));
+    const others = (raw.userDefined || []).filter((u) => !ours.has(u.key)).map(({ key, value }) => ({ key, value }));
+    const mine = Object.entries(CUSTOM_KEYS).filter(([k]) => (draft[k] || '').trim()).map(([k, key]) => ({ key, value: draft[k].trim() }));
+    body.userDefined = [...others, ...mine];
+  }
+  if (!mask.length) return contact;
+
+  const q = new URLSearchParams({ updatePersonFields: mask.join(','), personFields: FIELDS });
+  const person = await api(`${contact.id}:updateContact?${q}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return normalize(person);
 }
