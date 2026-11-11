@@ -29,7 +29,7 @@ export default function Settings({ tags, setTags, isOn, setField }) {
       ) : (
         <div role="tabpanel">
           <h3 className="first">How we met tags</h3>
-          <p className="hint">These are the tags offered on every contact. Tap the x to take one off the list.</p>
+          <p className="hint">These are the tags offered on every contact. A tag you make on a contact is added here too. Tap the x to take one off the list.</p>
           <div className="tagchips">
             {tags.map((t) => (
               <span key={t} className="tagchip tagchip-edit">

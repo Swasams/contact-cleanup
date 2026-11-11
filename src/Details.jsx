@@ -7,7 +7,7 @@ const INPUT = { text: 'text', tel: 'tel', email: 'email', date: 'text' };
 
 // Swipe a card up: quick "how we met" tags, everything saved on the contact,
 // and an Edit button. Only fields switched on in Settings appear here.
-export default function Details({ contact, startEditing = false, onSave, tagOptions, isOn }) {
+export default function Details({ contact, startEditing = false, onSave, onAddTag, tagOptions, isOn }) {
   const [draft, setDraft] = useState(() => draftOf(contact));
   const [editing, setEditing] = useState(startEditing);
   const [custom, setCustom] = useState('');
@@ -15,6 +15,8 @@ export default function Details({ contact, startEditing = false, onSave, tagOpti
   const saved = useRef(draftOf(contact));
   const latest = useRef(draft);
   latest.current = draft;
+  const onSaveRef = useRef(onSave); // always the newest, so a later save never works from an old copy
+  onSaveRef.current = onSave;
 
   const dateKeys = FIELD_DEFS.filter((f) => f.type === 'date').map((f) => f.key);
   const badDates = (d) => dateKeys.filter((k) => parseDate(d[k]) === undefined);
@@ -25,7 +27,7 @@ export default function Details({ contact, startEditing = false, onSave, tagOpti
     badDates(d).forEach((k) => { clean[k] = saved.current[k]; });
     if (sameDraft(clean, saved.current)) return;
     saved.current = clean;
-    onSave(clean);
+    onSaveRef.current(clean);
   };
 
   // Tags save themselves: anything still unsaved is saved when the popup closes.
@@ -37,6 +39,7 @@ export default function Details({ contact, startEditing = false, onSave, tagOpti
   const addCustom = () => {
     const t = custom.trim().replace(/,/g, ' ');
     if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase())) set('howMet', [...tags, t].join(', '));
+    if (t) onAddTag?.(t); // a tag made here becomes an option for everyone from now on
     setCustom('');
   };
 

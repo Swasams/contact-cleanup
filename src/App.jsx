@@ -11,7 +11,7 @@ import Bonus from './Bonus.jsx';
 import { applyDraft, DEFAULT_TAGS, defaultOn } from './contact.js';
 import { demoContacts, demoStarredDefault } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress, bonusDue, pickFavorites } from './bag.js';
-import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, redirectUri } from './google.js';
+import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, fetchContact, redirectUri } from './google.js';
 
 const UNDO_DEPTH = 3; // how many recent swipes can be undone
 
@@ -53,6 +53,14 @@ export default function App() {
   const [tags, setTagsState] = useState(() => (Array.isArray(load('cc.tags')) ? load('cc.tags') : DEFAULT_TAGS));
   const [fieldPrefs, setFieldPrefs] = useState(() => load('cc.fields') || {});
   const setTags = useCallback((next) => { setTagsState(next); save('cc.tags', next); }, []);
+  const addTag = useCallback((t) => {
+    setTagsState((prev) => {
+      if (prev.some((x) => x.toLowerCase() === t.toLowerCase())) return prev;
+      const next = [...prev, t];
+      save('cc.tags', next);
+      return next;
+    });
+  }, []);
   const isOn = useCallback((key) => fieldPrefs[key] ?? defaultOn(key), [fieldPrefs]);
   const setField = useCallback((key, on) => {
     setFieldPrefs((prev) => {
@@ -166,6 +174,13 @@ export default function App() {
     else if (load('cc.mode') === 'demo') startDemo();
   }, [startDemo, startGoogle]);
 
+  // Messages clear themselves after a few seconds (a tap clears them sooner).
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(''), 6000);
+    return () => clearTimeout(timer);
+  }, [notice]);
+
   // Save progress after every change.
   useEffect(() => {
     if (mode && bag) save(`cc.bag.${mode}`, bag);
@@ -236,7 +251,8 @@ export default function App() {
       await setStarred(top.id, want);
     } catch (err) {
       apply(!want);
-      setNotice(`Could not ${want ? 'star' : 'unstar'} "${top.name}". (${err.message})`);
+      console.error('Star failed:', err);
+      setNotice(`Could not ${want ? 'star' : 'unstar'} "${top.name}". Please try again.`);
     }
   }, [bag, byId]);
 
@@ -269,8 +285,14 @@ export default function App() {
     try {
       swap(await updateContact(contact, draft));
     } catch (err) {
-      swap(contact);
-      setNotice(`Could not save changes to "${contact.name}". (${err.message})`);
+      // Show what Google really has now, not a guess.
+      try {
+        swap(await fetchContact(contact.id));
+      } catch {
+        swap(contact);
+      }
+      console.error('Save failed:', err);
+      setNotice(`Could not save your changes to "${contact.name}". Please try again.`);
     }
   }, []);
 
@@ -341,7 +363,7 @@ export default function App() {
       )}
       {popup?.kind === 'details' && popupContact && (
         <Modal key="details" title={popupContact.name} onClose={closePopup}>
-          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tags} isOn={isOn} />
+          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tags} isOn={isOn} onAddTag={addTag} />
         </Modal>
       )}
       {popup === 'settings' && (

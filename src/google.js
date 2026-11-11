@@ -143,9 +143,41 @@ export function setStarred(id, starred) {
 // Save edits from the details screen. Only the parts that actually changed are
 // sent, so untouched fields (and anything this app does not know about) stay as they are.
 // For fields that can hold several entries, only the first is edited; the rest are kept.
-export async function updateContact(contact, draft) {
+// Saves run one at a time. Google asks for this: two changes to the same
+// account sent at once can trip over each other.
+let saveQueue = Promise.resolve();
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+export function updateContact(contact, draft) {
+  const run = async () => {
+    // Google refuses a save made from an out-of-date copy, and its own copy can
+    // lag for a moment after a change. So: fetch the latest, try, and if it
+    // still says "out of date", wait a little and try again.
+    const delays = [700, 1800];
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await saveOnce(contact, draft);
+      } catch (err) {
+        if (err instanceof AuthError || !/etag/i.test(err.message) || attempt >= delays.length) throw err;
+        await wait(delays[attempt]);
+      }
+    }
+  };
+  const result = saveQueue.then(run, run);
+  saveQueue = result.catch(() => {});
+  return result;
+}
+
+// Google's current copy of one contact.
+export async function fetchContact(id) {
+  return normalize(await api(`${id}?personFields=${FIELDS}`));
+}
+
+async function saveOnce(contact, draft) {
   const before = draftOf(contact);
-  const raw = contact.raw || {};
+  // Start from Google's current copy. The one loaded earlier goes stale as soon
+  // as anything changes the contact, including starring it.
+  const raw = await api(`${contact.id}?personFields=${FIELDS}`);
   const val = (k) => (draft[k] || '').trim();
   const changed = (...keys) => keys.some((k) => (draft[k] || '') !== (before[k] || ''));
   const strip = ({ metadata, formattedType, canonicalForm, ...rest }) => rest; // drop read-only parts
