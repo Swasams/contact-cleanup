@@ -69,9 +69,6 @@ export default function Bonus({ level, people, onClose }) {
           <svg className="burst" viewBox="0 0 200 200" preserveAspectRatio="none" aria-hidden="true"><polygon points={BURST} /></svg>
           <h2 className="bonus-title">Bonus<br />round!</h2>
         </motion.div>
-        <motion.p className="bonus-sub" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.45 }}>
-          {level * 10} contacts done today
-        </motion.p>
       </motion.div>
     );
   }
