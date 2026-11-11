@@ -3,7 +3,7 @@ import { FIELD_DEFS, draftOf, sameDraft, tagsOf, parseDate, fmtDate } from './co
 
 const THIS_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: THIS_YEAR - 1979 }, (_, i) => String(THIS_YEAR - i));
-const INPUT = { text: 'text', tel: 'tel', email: 'email', url: 'url', handle: 'text', date: 'text' };
+const INPUT = { text: 'text', tel: 'tel', email: 'email', date: 'text' };
 
 // Swipe a card up: quick "how we met" tags, everything saved on the contact,
 // and an Edit button. Only fields switched on in Settings appear here.
@@ -49,17 +49,15 @@ export default function Details({ contact, startEditing = false, onSave, tagOpti
     setEditing(false);
   };
 
-  // The plain fields (everything except tags, year, custom and labels) that are switched on.
+  // The plain fields (everything except tags and year) that are switched on.
   const plain = FIELD_DEFS.filter((f) => INPUT[f.type] || f.type === 'textarea').filter((f) => isOn(f.key));
-  const customKeys = isOn('custom') ? Object.keys(draft).filter((k) => k.startsWith('custom:')) : [];
-  const labels = isOn('labels') ? contact.labels || [] : [];
   const extras = [
     ...(isOn('phone') ? contact.phones.slice(1).map((v) => ['Other phone', v]) : []),
     ...(isOn('email') ? contact.emails.slice(1).map((v) => ['Other email', v]) : []),
   ];
   const shown = (f) => (f.type === 'date' ? fmtDate(parseDate(draft[f.key]) || null) || draft[f.key] : draft[f.key]);
-  const nothing = !plain.some((f) => draft[f.key]) && !extras.length && !customKeys.some((k) => draft[k]) && !labels.length;
-  const anyEditable = plain.length > 0 || customKeys.length > 0;
+  const nothing = !plain.some((f) => draft[f.key]) && !extras.length;
+  const anyEditable = plain.length > 0;
 
   return (
     <div className="details">
@@ -110,19 +108,13 @@ export default function Details({ contact, startEditing = false, onSave, tagOpti
                     value={draft[f.key]}
                     placeholder={f.type === 'date' ? 'MM/DD/YYYY (year optional)' : undefined}
                     inputMode={f.type === 'date' ? 'numeric' : undefined}
-                    autoCapitalize={['handle', 'email', 'url'].includes(f.type) ? 'none' : undefined}
+                    autoCapitalize={f.type === 'email' ? 'none' : undefined}
                     autoComplete="off"
                     aria-invalid={!!errors[f.key]}
                     onChange={(e) => { set(f.key, e.target.value); setErrors((er) => ({ ...er, [f.key]: false })); }}
                   />
                 )}
                 {errors[f.key] && <em className="field-error">Use MM/DD or MM/DD/YYYY.</em>}
-              </label>
-            ))}
-            {customKeys.map((k) => (
-              <label key={k}>
-                <span>{k.slice(7)}</span>
-                <input type="text" value={draft[k]} autoComplete="off" onChange={(e) => set(k, e.target.value)} />
               </label>
             ))}
             <button className="btn btn-primary" type="submit">Save</button>
@@ -135,10 +127,6 @@ export default function Details({ contact, startEditing = false, onSave, tagOpti
             {extras.map(([label, value], i) => (
               <div className="row" key={label + i}><dt>{label}</dt><dd>{value}</dd></div>
             ))}
-            {customKeys.filter((k) => draft[k]).map((k) => (
-              <div className="row" key={k}><dt>{k.slice(7)}</dt><dd>{draft[k]}</dd></div>
-            ))}
-            {labels.length > 0 && <div className="row"><dt>Labels</dt><dd>{labels.join(', ')}</dd></div>}
             {nothing && (
               <p className="empty-rows">
                 {anyEditable ? 'Nothing saved yet. Tap Edit to add details.' : 'Every field is switched off. Turn some on in Settings.'}

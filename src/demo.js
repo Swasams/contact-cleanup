@@ -30,11 +30,13 @@ const raw = [
 
 // A few demo people come with extra details so the details and message screens have something to show.
 const extras = {
-  0: { howMet: 'School', metYear: '2016', instagram: 'priya.demo', nickname: 'Pri', labels: ['Friends'] },
-  6: { howMet: 'Work', metYear: '2021', discord: 'devon.demo', title: 'Producer', department: 'Publishing', website: 'tidewater.example.com' },
-  15: { howMet: 'Family', instagram: 'kiki.demo', tiktok: 'kiki.demo', custom: { 'Dog name': 'Biscuit' } },
-  18: { address: '12 Lantern Row, Apt 3\nSpringfield', event: { year: 2022, month: 6, day: 4 } },
+  0: { howMet: 'School', metYear: '2016', starred: true },
+  6: { howMet: 'Work', metYear: '2021', title: 'Producer' },
+  10: { starred: true },
+  15: { howMet: 'Family' },
+  18: { address: '12 Lantern Row, Apt 3\nSpringfield', event: { year: 2022, month: 6, day: 4 }, starred: true },
   22: { metYear: '2023' },
+  23: { starred: true },
 };
 
 export const demoContacts = raw.map(([name, phone, email, org, birthday], i) =>
@@ -49,3 +51,5 @@ export const demoContacts = raw.map(([name, phone, email, org, birthday], i) =>
     ...extras[i],
   })
 );
+
+export const demoStarredDefault = demoContacts.filter((c) => c.starred).map((c) => c.id);

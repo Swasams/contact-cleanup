@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress, DAILY } from './bag.js';
+import { newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress, bonusDue, pickFavorites, DAILY } from './bag.js';
 
 const ids = (n, prefix = 'c') => Array.from({ length: n }, (_, i) => `${prefix}${i}`);
 const day = (n) => new Date(2026, 10, n, 9, 0, 0);
@@ -132,4 +132,40 @@ test('100 cards in one day reaches the daily cap', () => {
   s = dealForToday(s, all, day(2));
   assert.equal(progress(s, 300).capReached, false);
   assert.equal(s.hand.length, 10);
+});
+
+test('bonus round is due after every 10 cards, once each', () => {
+  const all = ids(60);
+  let s = start(all);
+  for (const id of s.hand.slice(0, 9)) s = swipe(s, id, 'keep');
+  assert.equal(bonusDue(s), 0);
+  const tenth = s.hand[0];
+  s = swipe(s, tenth, 'keep');
+  assert.equal(bonusDue(s), 1);
+  s = { ...s, bonus: 1 }; // shown
+  assert.equal(bonusDue(s), 0);
+  s = swipe(undoSwipe(s, tenth, 'keep'), tenth, 'keep'); // undo and redo the 10th
+  assert.equal(bonusDue(s), 0);
+  s = keepAll(dealMore(s, all));
+  assert.equal(s.done, 20);
+  assert.equal(bonusDue(s), 2);
+  s = dealForToday({ ...s, bonus: 2 }, all, day(2)); // new day starts over
+  assert.equal(s.bonus, 0);
+  s = keepAll(s);
+  assert.equal(bonusDue(s), 1);
+});
+
+test('favorites rotate so the same three do not repeat', () => {
+  const favs = ['a', 'b', 'c', 'd', 'e'];
+  const r1 = pickFavorites(favs, []);
+  assert.equal(r1.picks.length, 3);
+  const r2 = pickFavorites(favs, r1.favSeen);
+  const unseen = favs.filter((f) => !r1.picks.includes(f));
+  assert.ok(unseen.every((f) => r2.picks.includes(f)), 'the two not yet offered come up next');
+  assert.equal(r2.picks.length, 3);
+  assert.equal(new Set(r2.picks).size, 3);
+  assert.deepEqual(pickFavorites(['a', 'b'], []).picks.sort(), ['a', 'b']);
+  assert.deepEqual(pickFavorites([], ['x']).picks, []);
+  // someone un-starred is never offered
+  assert.ok(!pickFavorites(['a', 'b', 'c'], ['z', 'a']).picks.includes('z'));
 });

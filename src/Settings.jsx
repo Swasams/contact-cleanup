@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { FIELD_DEFS, DEFAULT_TAGS } from './contact.js';
+import Instructions from './Instructions.jsx';
+import AuthorsNote from './AuthorsNote.jsx';
 
-// Settings popup, two tabs:
-//   Tags   - the "How we met" tags offered on every contact
-//   Fields - one switch per contact field: on = shown in details and editable, off = hidden
+// Settings popup, four tabs:
+//   Tags          - the "How we met" tags offered on every contact
+//   Fields        - one switch per contact field: on = shown in details and editable, off = hidden
+//   Instructions  - what every control does
+//   Author's note
 export default function Settings({ tags, setTags, isOn, setField }) {
   const [tab, setTab] = useState('tags');
   const [text, setText] = useState('');
@@ -20,9 +24,15 @@ export default function Settings({ tags, setTags, isOn, setField }) {
       <div className="tabs" role="tablist">
         <button role="tab" aria-selected={tab === 'tags'} className={tab === 'tags' ? 'is-on' : ''} onClick={() => setTab('tags')}>How we met tags</button>
         <button role="tab" aria-selected={tab === 'fields'} className={tab === 'fields' ? 'is-on' : ''} onClick={() => setTab('fields')}>Fields</button>
+        <button role="tab" aria-selected={tab === 'help'} className={tab === 'help' ? 'is-on' : ''} onClick={() => setTab('help')}>Instructions</button>
+        <button role="tab" aria-selected={tab === 'note'} className={tab === 'note' ? 'is-on' : ''} onClick={() => setTab('note')}>Author's note</button>
       </div>
 
-      {tab === 'tags' ? (
+      {tab === 'help' ? (
+        <div role="tabpanel"><Instructions /></div>
+      ) : tab === 'note' ? (
+        <div role="tabpanel"><AuthorsNote /></div>
+      ) : tab === 'tags' ? (
         <div role="tabpanel">
           <p className="hint">These are the tags offered on every contact. Tap the x to take one off the list.</p>
           <div className="tagchips">
@@ -52,7 +62,6 @@ export default function Settings({ tags, setTags, isOn, setField }) {
                 <span className="switch-label">
                   {f.label}
                   {f.own && <em>added by this app</em>}
-                  {f.note && <em>{f.note.toLowerCase()}</em>}
                 </span>
                 <button
                   role="switch"

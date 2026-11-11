@@ -7,9 +7,10 @@ import AuthorsNote, { REPO_URL } from './AuthorsNote.jsx';
 import Reach from './Reach.jsx';
 import Details from './Details.jsx';
 import Settings from './Settings.jsx';
+import Bonus from './Bonus.jsx';
 import { applyDraft, DEFAULT_TAGS, defaultOn } from './contact.js';
-import { demoContacts } from './demo.js';
-import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress } from './bag.js';
+import { demoContacts, demoStarredDefault } from './demo.js';
+import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress, bonusDue, pickFavorites } from './bag.js';
 import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, redirectUri } from './google.js';
 
 const UNDO_DEPTH = 3; // how many recent swipes can be undone
@@ -45,6 +46,8 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popup, setPopup] = useState(null); // 'help' | 'note' | { kind: 'reach' | 'details', id, edit }
   const closePopup = useCallback(() => setPopup(null), []);
+  const [bonus, setBonus] = useState(null); // { level, picks: [ids] } while a bonus round is showing
+  const lastDone = useRef(null);
 
   // Settings, remembered on this device.
   const [tags, setTagsState] = useState(() => (Array.isArray(load('cc.tags')) ? load('cc.tags') : DEFAULT_TAGS));
@@ -112,6 +115,8 @@ export default function App() {
       setBag(s);
       setMode(modeName);
       setHistory([], modeName);
+      lastDone.current = null;
+      setBonus(null);
       setScreen('deck');
       save('cc.mode', modeName);
     },
@@ -122,7 +127,7 @@ export default function App() {
     // Finish any deletes left waiting when the app was last closed.
     const gone = new Set([...(load('cc.demo.deleted') || []), ...(load('cc.pending.demo') || [])]);
     save('cc.demo.deleted', [...gone]);
-    const starred = new Set(load('cc.demo.starred') || []);
+    const starred = new Set(load('cc.demo.starred') || demoStarredDefault);
     const edits = load('cc.demo.edits') || {};
     begin(
       'demo',
@@ -222,7 +227,7 @@ export default function App() {
     const apply = (value) => setContacts((cs) => cs.map((c) => (c.id === top.id ? { ...c, starred: value } : c)));
     apply(want);
     if (modeRef.current === 'demo') {
-      const set = new Set(load('cc.demo.starred') || []);
+      const set = new Set(load('cc.demo.starred') || demoStarredDefault);
       want ? set.add(top.id) : set.delete(top.id);
       save('cc.demo.starred', [...set]);
       return;
@@ -234,6 +239,24 @@ export default function App() {
       setNotice(`Could not ${want ? 'star' : 'unstar'} "${top.name}". (${err.message})`);
     }
   }, [bag, byId]);
+
+  // Bonus round: after every 10 cards in a day, once the swipe has finished animating.
+  // Only a swipe made in this session can set one off, never just opening the app.
+  useEffect(() => {
+    if (!bag) return;
+    const grew = lastDone.current !== null && bag.done > lastDone.current;
+    lastDone.current = bag.done;
+    const level = grew && !bonus ? bonusDue(bag) : 0;
+    if (!level) return;
+    const timer = setTimeout(() => {
+      const { picks, favSeen } = pickFavorites(contacts.filter((c) => c.starred).map((c) => c.id), bag.favSeen || []);
+      setBag((b) => ({ ...b, bonus: level, favSeen }));
+      setPopup(null);
+      setMenuOpen(false);
+      setBonus({ level, picks });
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [bag?.done]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save edits and tags from the details screen.
   const saveContact = useCallback(async (contact, draft) => {
@@ -265,7 +288,7 @@ export default function App() {
 
   // On a computer: arrow keys swipe, Backspace or Ctrl/Cmd+Z undoes.
   useEffect(() => {
-    if (screen !== 'deck' || popup) return;
+    if (screen !== 'deck' || popup || bonus) return;
     const onKey = (e) => {
       if (e.key === 'ArrowRight') act('keep');
       else if (e.key === 'ArrowLeft') act('delete');
@@ -277,7 +300,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, popup, act, undo, openDetails, openReach]);
+  }, [screen, popup, bonus, act, undo, openDetails, openReach]);
 
   const leave = () => {
     flushDeletes();
@@ -420,8 +443,7 @@ export default function App() {
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('settings'); }}>Settings</button>
-            <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('help'); }}>Instructions</button>
-            <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('note'); }}>Author's note</button>
+            <button role="menuitem" onClick={() => window.location.reload()}>Reload app</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}
             <button role="menuitem" onClick={leave}>{mode === 'demo' ? 'Exit demo' : 'Sign out'}</button>
           </div>
@@ -500,6 +522,16 @@ export default function App() {
       </footer>
     </main>
     {popups}
+    <AnimatePresence>
+      {bonus && (
+        <Bonus
+          key={`bonus-${bonus.level}`}
+          level={bonus.level}
+          people={bonus.picks.map((id) => byId.get(id)).filter(Boolean)}
+          onClose={() => setBonus(null)}
+        />
+      )}
+    </AnimatePresence>
     </MotionConfig>
   );
 }

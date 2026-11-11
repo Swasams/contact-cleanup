@@ -9,7 +9,7 @@ const SCOPE = 'https://www.googleapis.com/auth/contacts';
 const API = 'https://people.googleapis.com/v1/';
 const TOKEN_KEY = 'cc.token';
 const STATE_KEY = 'cc.oauth_state';
-const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships,userDefined,biographies,nicknames,fileAses,addresses,events,urls,relations';
+const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships,userDefined,biographies,addresses,events';
 const STARRED = 'contactGroups/starred'; // Google's built-in "Starred" group = favorites
 
 export class AuthError extends Error {}
@@ -87,52 +87,32 @@ async function api(path, opts = {}) {
   return res.status === 204 ? null : res.json();
 }
 
-let groupNames = {}; // label ID -> label name, filled in when contacts are loaded
 const OURS = new Set(Object.values(CUSTOM_KEYS));
 
 export function normalize(p) {
   const org = p.organizations?.[0] || {};
-  const n0 = p.names?.[0] || {};
   const all = Object.fromEntries((p.userDefined || []).map((u) => [u.key, u.value]));
   return withDisplayName({
     ...emptyContact(),
     id: p.resourceName,
-    realName: n0.displayName || '',
-    nickname: p.nicknames?.[0]?.value || '',
-    phonetic: n0.phoneticFullName || [n0.phoneticGivenName, n0.phoneticMiddleName, n0.phoneticFamilyName].filter(Boolean).join(' '),
-    fileAs: p.fileAses?.[0]?.value || '',
+    realName: p.names?.[0]?.displayName || '',
     phones: (p.phoneNumbers || []).map((x) => x.value).filter(Boolean),
     emails: (p.emailAddresses || []).map((x) => x.value).filter(Boolean),
     org: org.name || '',
     title: org.title || '',
-    department: org.department || '',
     address: p.addresses?.[0]?.formattedValue || '',
     birthday: p.birthdays?.find((x) => x.date)?.date || null,
     event: p.events?.find((x) => x.date)?.date || null,
-    website: p.urls?.[0]?.value || '',
-    relation: p.relations?.[0]?.person || '',
     photo: p.photos?.find((x) => !x.default)?.url || null,
     starred: (p.memberships || []).some((m) => m.contactGroupMembership?.contactGroupResourceName === STARRED),
-    labels: (p.memberships || []).map((m) => groupNames[m.contactGroupMembership?.contactGroupResourceName]).filter(Boolean),
     notes: p.biographies?.[0]?.value || '',
     howMet: all[CUSTOM_KEYS.howMet] || '',
     metYear: all[CUSTOM_KEYS.metYear] || '',
-    instagram: all[CUSTOM_KEYS.instagram] || '',
-    tiktok: all[CUSTOM_KEYS.tiktok] || '',
-    discord: all[CUSTOM_KEYS.discord] || '',
-    custom: Object.fromEntries(Object.entries(all).filter(([k]) => !OURS.has(k))),
     raw: p, // the original record, needed to save edits without losing anything
   });
 }
 
 export async function fetchAllContacts(onProgress) {
-  // Label names first, so each contact can show which labels it has.
-  try {
-    const g = await api('contactGroups?pageSize=1000');
-    groupNames = Object.fromEntries((g.contactGroups || []).filter((x) => x.groupType === 'USER_CONTACT_GROUP').map((x) => [x.resourceName, x.name]));
-  } catch {
-    groupNames = {};
-  }
   const out = [];
   let pageToken = '';
   do {
@@ -179,25 +159,16 @@ export async function updateContact(contact, draft) {
     body[field] = [...(first ? [first] : []), ...rest(field)];
   };
 
-  if (changed('realName', 'phonetic')) {
-    const n0 = raw.names?.[0] || {};
-    const name = changed('realName')
-      ? (val('realName') ? { unstructuredName: val('realName') } : {})
-      : keep(n0, ['givenName', 'middleName', 'familyName', 'honorificPrefix', 'honorificSuffix']);
-    const phon = changed('phonetic')
-      ? (val('phonetic') ? { phoneticFullName: val('phonetic') } : {})
-      : keep(n0, ['phoneticGivenName', 'phoneticMiddleName', 'phoneticFamilyName', 'phoneticFullName']);
-    const merged = { ...name, ...phon };
+  if (changed('realName')) {
     mask.push('names');
-    body.names = Object.keys(merged).length ? [merged] : [];
+    body.names = val('realName') ? [{ unstructuredName: val('realName') }] : [];
   }
-  if (changed('nickname')) put('nicknames', val('nickname') ? { value: val('nickname') } : null);
-  if (changed('fileAs')) put('fileAses', val('fileAs') ? { value: val('fileAs') } : null);
   if (changed('phone')) put('phoneNumbers', val('phone') ? { value: val('phone'), type: raw.phoneNumbers?.[0]?.type } : null);
   if (changed('email')) put('emailAddresses', val('email') ? { value: val('email'), type: raw.emailAddresses?.[0]?.type } : null);
-  if (changed('org', 'title', 'department')) {
-    const any = val('org') || val('title') || val('department');
-    put('organizations', any ? { name: val('org'), title: val('title'), department: val('department'), type: raw.organizations?.[0]?.type } : null);
+  if (changed('org', 'title')) {
+    const o = raw.organizations?.[0] || {};
+    const any = val('org') || val('title') || o.department;
+    put('organizations', any ? { ...keep(o, ['department', 'type']), name: val('org'), title: val('title') } : null);
   }
   if (changed('address')) put('addresses', val('address') ? { streetAddress: val('address'), type: raw.addresses?.[0]?.type } : null);
   if (changed('birthday')) {
@@ -208,17 +179,15 @@ export async function updateContact(contact, draft) {
     const d = parseDate(draft.event);
     if (d !== undefined) put('events', d ? { date: d, type: raw.events?.[0]?.type || 'anniversary' } : null);
   }
-  if (changed('website')) put('urls', val('website') ? { value: val('website'), type: raw.urls?.[0]?.type } : null);
-  if (changed('relation')) put('relations', val('relation') ? { person: val('relation'), type: raw.relations?.[0]?.type || 'friend' } : null);
   if (changed('notes')) {
     mask.push('biographies');
     body.biographies = val('notes') ? [{ value: draft.notes, contentType: 'TEXT_PLAIN' }] : [];
   }
-  const customKeys = Object.keys({ ...before, ...draft }).filter((k) => k.startsWith('custom:'));
-  if (changed(...Object.keys(CUSTOM_KEYS), ...customKeys)) {
+  if (changed(...Object.keys(CUSTOM_KEYS))) {
+    // Our two tags live among the contact's custom fields; any other custom fields are left untouched.
     mask.push('userDefined');
+    const others = (raw.userDefined || []).filter((u) => !OURS.has(u.key)).map(({ key, value }) => ({ key, value }));
     const mine = Object.entries(CUSTOM_KEYS).filter(([k]) => val(k)).map(([k, key]) => ({ key, value: val(k) }));
-    const others = customKeys.filter((k) => val(k)).map((k) => ({ key: k.slice(7), value: val(k) }));
     body.userDefined = [...others, ...mine];
   }
   if (!mask.length) return contact;

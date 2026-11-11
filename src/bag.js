@@ -4,6 +4,8 @@
 
 export const DAILY = 10; // cards per deal
 export const DAILY_CAP = 100; // after this many in one day, the app says stop
+export const BONUS_EVERY = 10; // a bonus round after every 10 cards in a day
+export const BONUS_PICKS = 3; // how many favorites a bonus round offers
 
 export function todayStr(d = new Date()) {
   const p = (n) => String(n).padStart(2, '0');
@@ -31,10 +33,12 @@ export function newState() {
     cycle: 1,
     kept: 0, // lifetime totals
     deleted: 0,
+    bonus: 0, // highest bonus round already shown today
+    favSeen: [], // favorites recently offered in bonus rounds
   };
 }
 
-const clone = (s) => ({ ...s, bag: [...s.bag], hand: [...s.hand], seen: [...s.seen] });
+const clone = (s) => ({ ...s, bag: [...s.bag], hand: [...s.hand], seen: [...s.seen], favSeen: [...(s.favSeen || [])] });
 
 // Sync saved state with the contact list as it is right now:
 // drop people who no longer exist, slip brand-new people into the bag.
@@ -89,6 +93,7 @@ export function dealForToday(state, ids, now = new Date(), rnd = Math.random) {
   s.hand.push(...draw(s, need, ids, rnd));
   s.date = t;
   s.done = 0;
+  s.bonus = 0;
   return s;
 }
 
@@ -137,4 +142,30 @@ export function progress(state, total) {
     cycleComplete: state.bag.length === 0 && state.hand.length === 0 && total > 0,
     capReached: state.done + state.hand.length >= DAILY_CAP,
   };
+}
+
+// Which bonus round is due right now, or 0. Round 1 comes after 10 cards in
+// a day, round 2 after 20, and so on. Each round only happens once a day,
+// so undoing and re-swiping the 10th card does not replay it.
+export function bonusDue(state) {
+  if (!state.done || state.done % BONUS_EVERY !== 0) return 0;
+  const level = state.done / BONUS_EVERY;
+  return level > (state.bonus || 0) ? level : 0;
+}
+
+// Choose up to three favorites for a bonus round. People who have not come
+// up recently go first, so the same three do not keep appearing. Returns the
+// picks and the updated "recently offered" list.
+export function pickFavorites(starredIds, favSeen = [], rnd = Math.random) {
+  const starred = new Set(starredIds);
+  let seen = favSeen.filter((id) => starred.has(id));
+  const fresh = shuffle(starredIds.filter((id) => !seen.includes(id)), rnd);
+  let picks = fresh.slice(0, BONUS_PICKS);
+  if (picks.length < BONUS_PICKS) {
+    // Everyone has had a turn: start a new round with the ones seen longest ago.
+    const again = seen.filter((id) => !picks.includes(id)).slice(0, BONUS_PICKS - picks.length);
+    picks = [...picks, ...again];
+    seen = [];
+  }
+  return { picks, favSeen: [...seen.filter((id) => !picks.includes(id)), ...picks] };
 }

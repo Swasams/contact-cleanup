@@ -58,10 +58,16 @@ export default function Instructions() {
 
       <h3>On the card</h3>
       <ul className="plain">
-        <li><strong>Tap the card</strong> to message, call or email the person. On a computer, press Enter.</li>
+        <li><strong>Tap the card</strong> to reach the person through Messages, Gmail or WhatsApp. On a computer, press Enter.</li>
         <li><strong>Swipe the card up</strong> for all their details. On a computer, press the up arrow key.</li>
         <li>In details, tap the tags to record how and when you met. Tap <strong>Edit</strong> to change their name, number and the rest.</li>
-        <li>Instagram, TikTok and Discord show up as ways to reach someone once you add their handle in details.</li>
+      </ul>
+
+      <h3>Bonus rounds</h3>
+      <ul className="plain">
+        <li>Every 10 contacts you finish in a day opens a bonus round: a small nudge to reach out to someone you starred.</li>
+        <li>Pick one of the three favorites shown, then message or call them. Tap Done, or skip it.</li>
+        <li>There are 10 bonus rounds a day, each with a different nudge. Star more people to see more faces.</li>
       </ul>
 
       <h3>How the days work</h3>
@@ -86,7 +92,7 @@ export default function Instructions() {
 
       <h3>The menu</h3>
       <ul className="plain">
-        <li>The button in the top corner opens Settings, these instructions and the author's note, and lets you sign out.</li>
+        <li>The button in the top corner opens Settings (which also holds these instructions and the author's note), reloads the app to pick up the newest version, and lets you sign out.</li>
       </ul>
     </>
   );

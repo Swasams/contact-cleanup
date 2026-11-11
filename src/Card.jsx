@@ -15,13 +15,13 @@ const COLORS = [
   ['#724FB8', '#FFFBF3'], // violet
 ];
 
-function initials(name) {
+export function initials(name) {
   const words = name.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
   if (!words.length) return '?';
   return (words[0][0] + (words[1]?.[0] || '')).toUpperCase();
 }
 
-function colorFor(id) {
+export function colorFor(id) {
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return COLORS[h % COLORS.length];
