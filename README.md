@@ -1,4 +1,4 @@
-# Contact Clean Up
+# Who Dis?
 
 Swipe through your Google contacts, 10 a day. Left to delete, right to keep.
 

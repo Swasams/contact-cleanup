@@ -187,7 +187,7 @@ export default function App() {
             <span className="mini-line short" />
           </div>
         </div>
-        <h1 className="title">Contact Clean Up</h1>
+        <h1 className="title">Who Dis?</h1>
         <p className="lede">
           Swipe through your contacts, {DAILY} a day. Left to delete, right to keep.
         </p>

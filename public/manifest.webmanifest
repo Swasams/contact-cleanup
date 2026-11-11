@@ -1,6 +1,6 @@
 {
-  "name": "Contact Clean Up",
-  "short_name": "Clean Up",
+  "name": "Who Dis?",
+  "short_name": "Who Dis?",
   "description": "Swipe through your contacts, 10 a day.",
   "start_url": "./",
   "scope": "./",
