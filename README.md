@@ -14,7 +14,7 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Bonus rounds:** every 10 contacts finished in a day opens a bonus round with a nudge ("Send ___ a meme") and three of your favorites to pick from. Ten rounds a day, in a set order (`src/prompts.js`).
 - **Settings** (in the menu): edit the list of how-we-met tags, and switch each contact field on or off. On shows it in details and makes it editable; off hides it.
 - **Deleting a favorite** asks you to confirm first.
-- **Read me** (author's note plus instructions) on the welcome screen and as a tab inside Settings.
+- **Instructions and Author's note** as two buttons on the welcome screen, and merged into a Read me tab inside Settings.
 - **On a computer:** right arrow keeps, left arrow deletes, up arrow opens details, Enter opens ways to reach, Backspace or Ctrl+Z undoes.
 - **10 a day:** the first open of the day deals 10 cards. Unfinished cards come first the next day. Skipped days do not stack up.
 - **+10:** the +10 button deals another 10 whenever you want, up to 100 in a day. At 100 the app tells you to stop.

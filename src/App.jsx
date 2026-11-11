@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Card from './Card.jsx';
 import Modal from './Modal.jsx';
-import ReadMe from './ReadMe.jsx';
-import { REPO_URL } from './AuthorsNote.jsx';
+import Instructions from './Instructions.jsx';
+import AuthorsNote, { REPO_URL } from './AuthorsNote.jsx';
 import Reach from './Reach.jsx';
 import Details from './Details.jsx';
 import Settings from './Settings.jsx';
@@ -349,9 +349,14 @@ export default function App() {
           <Settings tags={tags} setTags={setTags} isOn={isOn} setField={setField} />
         </Modal>
       )}
-      {popup === 'readme' && (
-        <Modal key="readme" title="Read me" onClose={closePopup}>
-          <ReadMe />
+      {popup === 'help' && (
+        <Modal key="help" title="Instructions" onClose={closePopup}>
+          <Instructions />
+        </Modal>
+      )}
+      {popup === 'note' && (
+        <Modal key="note" title="Author's note" onClose={closePopup}>
+          <AuthorsNote />
         </Modal>
       )}
     </AnimatePresence>
@@ -384,7 +389,10 @@ export default function App() {
             </motion.p>
           )}
           <motion.button className="btn" variants={rise} onClick={startDemo}>Try the demo</motion.button>
-          <motion.button className="btn btn-small" variants={rise} onClick={() => setPopup('readme')}>Read me</motion.button>
+          <motion.div className="btn-row" variants={rise}>
+            <button className="btn btn-small" onClick={() => setPopup('help')}>Instructions</button>
+            <button className="btn btn-small" onClick={() => setPopup('note')}>Author's note</button>
+          </motion.div>
           <motion.div className="fineprint" variants={rise}>
             <p>Your contacts stay between this browser and Google. Nothing is sent anywhere else.</p>
             <p>
