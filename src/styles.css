@@ -5,10 +5,10 @@
   --parchment: #f2e3c6;
   --cream: #fffbf3;
   --coral: #e9584c;
-  --peach: #ffa532;
-  --pink: #e63b72;
-  --leaf: #4b9a2a;
-  --violet: #6537bf;
+  --peach: #ffb35c;
+  --pink: #eb5682;
+  --leaf: #63a442;
+  --violet: #724fb8;
   --indigo: #2b2a4c;
 
   /* How the app uses it */
@@ -35,24 +35,6 @@
   --shadow: 5px 5px 0 var(--shade);
   --display: 'Abril Fatface', Georgia, 'Times New Roman', serif;
   --body: 'Fredoka', ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
-}
-
-/* Night mode: same palette, flipped. Dark indigo page, cream outlines and text. */
-:root[data-theme='night'] {
-  --paper: #1b1a31;
-  --paper-dot: #2b2a4c;
-  --card: #2f2e58;
-  --ink: var(--cream);
-  --edge: var(--cream);
-  --shade: #0b0a1a;
-  --muted: #bcb9d6;
-  --off: #3a3960;
-  --off-ink: #74729a;
-  --rule: #55537f;
-  --stamp-keep: #86d264;
-  --stamp-delete: #ff8679;
-  --veil: rgba(5, 5, 15, 0.7);
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }

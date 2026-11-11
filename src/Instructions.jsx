@@ -80,7 +80,7 @@ export default function Instructions() {
 
       <h3>The menu</h3>
       <ul className="plain">
-        <li>The button in the top corner lets you switch between day and night mode, sign out, open these instructions, or read the author's note.</li>
+        <li>The button in the top corner lets you sign out, open these instructions, or read the author's note.</li>
       </ul>
     </>
   );

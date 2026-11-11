@@ -12,7 +12,6 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Tap a card** to message, call or email the person (Messages, WhatsApp, phone, email, plus Instagram, TikTok and Discord once you add a handle).
 - **Swipe a card up** for details: quick tags for how and when you met, and an Edit button for the contact's fields. Tags and handles are saved to Google as custom fields.
 - **Deleting a favorite** asks you to confirm first.
-- **Night mode** in the menu.
 - **Instructions and Author's note** on the welcome screen and in the menu.
 - **On a computer:** right arrow keeps, left arrow deletes, up arrow opens details, Enter opens ways to reach, Backspace or Ctrl+Z undoes.
 - **10 a day:** the first open of the day deals 10 cards. Unfinished cards come first the next day. Skipped days do not stack up.

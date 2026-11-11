@@ -8,11 +8,11 @@ const UP_DISTANCE = 80; // px upward to open details
 
 // Avatar colours from the creator palette: [background, text]
 const COLORS = [
-  ['#FFA532', '#2B2A4C'], // peach
+  ['#FFB35C', '#2B2A4C'], // peach
   ['#E9584C', '#2B2A4C'], // coral
-  ['#E63B72', '#FFFBF3'], // pink
-  ['#4B9A2A', '#FFFBF3'], // leaf green
-  ['#6537BF', '#FFFBF3'], // violet
+  ['#EB5682', '#2B2A4C'], // pink
+  ['#63A442', '#2B2A4C'], // leaf green
+  ['#724FB8', '#FFFBF3'], // violet
 ];
 
 function initials(name) {

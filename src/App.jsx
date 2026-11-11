@@ -43,7 +43,6 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [popup, setPopup] = useState(null); // 'help' | 'note' | { kind: 'reach' | 'details', id, edit }
-  const [theme, setTheme] = useState(() => (load('cc.theme') === 'night' ? 'night' : 'day'));
   const closePopup = useCallback(() => setPopup(null), []);
 
   const historyRef = useRef([]);
@@ -147,13 +146,6 @@ export default function App() {
     if (isSignedIn()) startGoogle();
     else if (load('cc.mode') === 'demo') startDemo();
   }, [startDemo, startGoogle]);
-
-  // Day or night mode, remembered on this device.
-  useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'night' ? '#1B1A31' : '#F2E3C6');
-    save('cc.theme', theme);
-  }, [theme]);
 
   // Save progress after every change.
   useEffect(() => {
@@ -408,9 +400,6 @@ export default function App() {
         {menuOpen && (
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
-            <button role="menuitem" onClick={() => { setMenuOpen(false); setTheme(theme === 'night' ? 'day' : 'night'); }}>
-              {theme === 'night' ? 'Day mode' : 'Night mode'}
-            </button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('help'); }}>Instructions</button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('note'); }}>Author's note</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}
