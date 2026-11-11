@@ -36,4 +36,5 @@ export const demoContacts = raw.map(([name, phone, email, org, birthday], i) => 
   title: '',
   birthday,
   photo: null,
+  starred: false,
 }));

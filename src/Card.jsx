@@ -3,7 +3,14 @@ import { motion, useMotionValue, useTransform } from 'framer-motion';
 const SWIPE_DISTANCE = 110; // px the card must travel to count as a swipe
 const SWIPE_VELOCITY = 700; // or a fast flick
 
-const COLORS = ['#FFD23F', '#FF8A5B', '#5B8DEF', '#3DBE7B', '#C792EA', '#FF6B9D'];
+// Avatar colours from the creator palette: [background, text]
+const COLORS = [
+  ['#FFB35C', '#2B2A4C'], // peach
+  ['#E5726B', '#2B2A4C'], // coral
+  ['#EB5682', '#F6F0E2'], // pink
+  ['#63A442', '#F6F0E2'], // leaf green
+  ['#724FB8', '#F6F0E2'], // violet
+];
 
 function initials(name) {
   const words = name.replace(/[^\p{L}\p{N}\s]/gu, ' ').trim().split(/\s+/).filter(Boolean);
@@ -72,7 +79,13 @@ export default function Card({ contact, isTop, exitDir, onSwipe }) {
       <motion.div className="stamp stamp-keep" style={{ opacity: keepOpacity }}>KEEP</motion.div>
       <motion.div className="stamp stamp-delete" style={{ opacity: deleteOpacity }}>DELETE</motion.div>
 
-      <div className="avatar" style={{ background: colorFor(contact.id) }}>
+      {contact.starred && (
+        <div className="fav" aria-label="Favorite">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" /></svg>
+        </div>
+      )}
+
+      <div className="avatar" style={{ background: colorFor(contact.id)[0], color: colorFor(contact.id)[1] }}>
         {contact.photo ? (
           <img src={contact.photo} alt="" draggable="false" referrerPolicy="no-referrer" />
         ) : (

@@ -3,9 +3,9 @@ import { AnimatePresence } from 'framer-motion';
 import Card from './Card.jsx';
 import { demoContacts } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress } from './bag.js';
-import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, redirectUri } from './google.js';
+import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, redirectUri } from './google.js';
 
-const UNDO_WINDOW_MS = 5000; // how long a delete can be undone before it is sent to Google
+const UNDO_DEPTH = 3; // how many recent swipes can be undone
 
 const load = (key) => {
   try {
@@ -26,12 +26,12 @@ export default function App() {
   const [loadCount, setLoadCount] = useState(0);
   const [contacts, setContacts] = useState([]);
   const [bag, setBag] = useState(null);
-  const [last, setLast] = useState(null); // last swipe, for undo: { contact, action }
+  const [history, setHistoryState] = useState([]); // recent swipes, newest last: { contact, action }
   const [exitDir, setExitDir] = useState(1);
   const [notice, setNotice] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const pending = useRef(null); // a delete waiting out its undo window
+  const historyRef = useRef([]);
   const modeRef = useRef(null);
   const idsRef = useRef([]);
   const booted = useRef(false);
@@ -40,34 +40,82 @@ export default function App() {
   idsRef.current = contacts.map((c) => c.id);
   modeRef.current = mode;
 
-  const begin = useCallback((modeName, list) => {
-    const ids = list.map((c) => c.id);
-    let s = reconcile(load(`cc.bag.${modeName}`) || newState(), ids);
-    s = dealForToday(s, ids);
-    setContacts(list);
-    setBag(s);
-    setMode(modeName);
-    setLast(null);
-    setScreen('deck');
-    save('cc.mode', modeName);
+  // A delete is only sent to Google once it can no longer be undone. Until
+  // then it waits in the undo history, and its ID is also written to storage
+  // so it still goes through if the app is closed without warning.
+  const setHistory = useCallback((next, modeName = modeRef.current) => {
+    historyRef.current = next;
+    setHistoryState(next);
+    if (modeName) save(`cc.pending.${modeName}`, next.filter((h) => h.action === 'delete').map((h) => h.contact.id));
   }, []);
 
+  const commitDelete = useCallback((contact, leaving = false) => {
+    if (modeRef.current === 'demo') {
+      save('cc.demo.deleted', [...new Set([...(load('cc.demo.deleted') || []), contact.id])]);
+      return;
+    }
+    deleteContact(contact.id, { keepalive: leaving }).catch((err) => {
+      setNotice(
+        err instanceof AuthError
+          ? `${err.message} "${contact.name}" was not deleted.`
+          : `Could not delete "${contact.name}", so it is still in your contacts. (${err.message})`
+      );
+    });
+  }, []);
+
+  // Make every delete still waiting in the undo history final.
+  const flushDeletes = useCallback(
+    (leaving = false) => {
+      const h = historyRef.current;
+      if (!h.some((e) => e.action === 'delete')) return;
+      h.filter((e) => e.action === 'delete').forEach((e) => commitDelete(e.contact, leaving));
+      setHistory(h.filter((e) => e.action !== 'delete'));
+    },
+    [commitDelete, setHistory]
+  );
+
+  const begin = useCallback(
+    (modeName, list) => {
+      const ids = list.map((c) => c.id);
+      let s = reconcile(load(`cc.bag.${modeName}`) || newState(), ids);
+      s = dealForToday(s, ids);
+      modeRef.current = modeName;
+      setContacts(list);
+      setBag(s);
+      setMode(modeName);
+      setHistory([], modeName);
+      setScreen('deck');
+      save('cc.mode', modeName);
+    },
+    [setHistory]
+  );
+
   const startDemo = useCallback(() => {
-    const gone = new Set(load('cc.demo.deleted') || []);
-    begin('demo', demoContacts.filter((c) => !gone.has(c.id)));
+    // Finish any deletes left waiting when the app was last closed.
+    const gone = new Set([...(load('cc.demo.deleted') || []), ...(load('cc.pending.demo') || [])]);
+    save('cc.demo.deleted', [...gone]);
+    const starred = new Set(load('cc.demo.starred') || []);
+    begin('demo', demoContacts.filter((c) => !gone.has(c.id)).map((c) => ({ ...c, starred: starred.has(c.id) })));
   }, [begin]);
 
   const startGoogle = useCallback(async () => {
     setScreen('loading');
     setLoadCount(0);
     try {
-      const list = await fetchAllContacts((n) => setLoadCount(n));
+      let list = await fetchAllContacts((n) => setLoadCount(n));
+      // Finish any deletes left waiting when the app was last closed.
+      const waiting = new Set(load('cc.pending.google') || []);
+      if (waiting.size) {
+        modeRef.current = 'google';
+        list.filter((c) => waiting.has(c.id)).forEach((c) => commitDelete(c));
+        list = list.filter((c) => !waiting.has(c.id));
+      }
       begin('google', list);
     } catch (err) {
       setNotice(err.message || 'Could not load your contacts.');
       setScreen('welcome');
     }
-  }, [begin]);
+  }, [begin, commitDelete]);
 
   // On first load: finish a Google sign-in redirect, or resume where we left off.
   useEffect(() => {
@@ -84,68 +132,77 @@ export default function App() {
     if (mode && bag) save(`cc.bag.${mode}`, bag);
   }, [mode, bag]);
 
-  // Actually delete a contact whose undo window has passed.
-  const commitPending = useCallback((leaving = false) => {
-    const p = pending.current;
-    if (!p) return;
-    clearTimeout(p.timer);
-    pending.current = null;
-    setLast((l) => (l && l.contact.id === p.contact.id ? null : l));
-    if (modeRef.current === 'demo') {
-      save('cc.demo.deleted', [...(load('cc.demo.deleted') || []), p.contact.id]);
-      return;
-    }
-    deleteContact(p.contact.id, { keepalive: leaving }).catch((err) => {
-      setNotice(
-        err instanceof AuthError
-          ? `${err.message} "${p.contact.name}" was not deleted.`
-          : `Could not delete "${p.contact.name}", so it is still in your contacts. (${err.message})`
-      );
-    });
-  }, []);
-
-  // Leaving the app: send any waiting delete now. Coming back: check for a new day.
+  // Leaving the app: waiting deletes become final. Coming back: check for a new day.
   useEffect(() => {
     const onVisibility = () => {
-      if (document.visibilityState === 'hidden') commitPending(true);
+      if (document.visibilityState === 'hidden') flushDeletes(true);
       else setBag((b) => (b ? dealForToday(b, idsRef.current) : b));
     };
-    const onHide = () => commitPending(true);
+    const onHide = () => flushDeletes(true);
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('pagehide', onHide);
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pagehide', onHide);
     };
-  }, [commitPending]);
+  }, [flushDeletes]);
 
   const act = useCallback(
     (action) => {
       const top = bag && byId.get(bag.hand[0]);
       if (!top) return;
-      commitPending(); // only one delete can be waiting at a time
       setExitDir(action === 'keep' ? 1 : -1);
       setBag((b) => swipe(b, top.id, action));
-      setLast({ contact: top, action });
-      if (action === 'delete') {
-        setContacts((cs) => cs.filter((c) => c.id !== top.id));
-        pending.current = { contact: top, timer: setTimeout(() => commitPending(), UNDO_WINDOW_MS) };
+      if (action === 'delete') setContacts((cs) => cs.filter((c) => c.id !== top.id));
+      // Remember the swipe. Anything older than the last few can no longer be
+      // undone, so an old delete becomes final at this point.
+      const next = [...historyRef.current, { contact: top, action }];
+      while (next.length > UNDO_DEPTH) {
+        const old = next.shift();
+        if (old.action === 'delete') commitDelete(old.contact);
       }
+      setHistory(next);
     },
-    [bag, byId, commitPending]
+    [bag, byId, commitDelete, setHistory]
   );
 
   const undo = useCallback(() => {
-    if (!last) return;
-    if (last.action === 'delete') {
-      if (!pending.current) return;
-      clearTimeout(pending.current.timer);
-      pending.current = null;
-      setContacts((cs) => [...cs, last.contact]);
-    }
+    const h = historyRef.current;
+    if (!h.length) return;
+    const last = h[h.length - 1];
+    setHistory(h.slice(0, -1));
+    if (last.action === 'delete') setContacts((cs) => [...cs, last.contact]);
     setBag((b) => undoSwipe(b, last.contact.id, last.action));
-    setLast(null);
-  }, [last]);
+  }, [setHistory]);
+
+  // Star = favorite. In Google Contacts this is the "Starred" group.
+  const toggleStar = useCallback(async () => {
+    const top = bag && byId.get(bag.hand[0]);
+    if (!top) return;
+    const want = !top.starred;
+    const apply = (value) => setContacts((cs) => cs.map((c) => (c.id === top.id ? { ...c, starred: value } : c)));
+    apply(want);
+    if (modeRef.current === 'demo') {
+      const set = new Set(load('cc.demo.starred') || []);
+      want ? set.add(top.id) : set.delete(top.id);
+      save('cc.demo.starred', [...set]);
+      return;
+    }
+    try {
+      await setStarred(top.id, want);
+    } catch (err) {
+      apply(!want);
+      setNotice(`Could not ${want ? 'star' : 'unstar'} "${top.name}". (${err.message})`);
+    }
+  }, [bag, byId]);
+
+  // "+10", never going past the daily cap.
+  const more = useCallback(() => {
+    setBag((b) => {
+      const room = DAILY_CAP - (b.done + b.hand.length);
+      return room > 0 ? dealMore(b, idsRef.current, Math.min(DAILY, room)) : b;
+    });
+  }, []);
 
   // On a computer: arrow keys swipe, Backspace or Ctrl/Cmd+Z undoes.
   useEffect(() => {
@@ -161,15 +218,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [screen, act, undo]);
 
-  // "+10 more", never going past the daily cap.
-  const more = () =>
-    setBag((b) => {
-      const room = DAILY_CAP - (b.done + b.hand.length);
-      return room > 0 ? dealMore(b, idsRef.current, Math.min(DAILY, room)) : b;
-    });
-
   const leave = () => {
-    commitPending();
+    flushDeletes();
     if (mode === 'google') signOut();
     localStorage.removeItem('cc.mode');
     setMenuOpen(false);
@@ -180,12 +230,9 @@ export default function App() {
   };
 
   const resetDemo = () => {
-    if (pending.current) clearTimeout(pending.current.timer);
-    pending.current = null;
-    localStorage.removeItem('cc.demo.deleted');
-    localStorage.removeItem('cc.bag.demo');
+    ['cc.demo.deleted', 'cc.demo.starred', 'cc.bag.demo', 'cc.pending.demo'].forEach((k) => localStorage.removeItem(k));
     setMenuOpen(false);
-    begin('demo', demoContacts);
+    begin('demo', demoContacts.map((c) => ({ ...c, starred: false })));
   };
 
   // ---------- screens ----------
@@ -235,8 +282,9 @@ export default function App() {
   const p = progress(bag, contacts.length);
   const hand = bag.hand.map((id) => byId.get(id)).filter(Boolean);
   const visible = hand.slice(0, 2).reverse(); // top card is last so it draws on top
-  const canUndo = !!last && (last.action === 'keep' || !!pending.current);
+  const top = hand[0];
   const deckEmpty = hand.length === 0;
+  const canMore = !p.capReached && contacts.length > 0;
 
   return (
     <main className="screen deck">
@@ -269,7 +317,7 @@ export default function App() {
       <section className="stack">
         <AnimatePresence custom={exitDir}>
           {visible.map((c) => (
-            <Card key={c.id} contact={c} isTop={c.id === hand[0].id} exitDir={exitDir} onSwipe={act} />
+            <Card key={c.id} contact={c} isTop={c.id === top.id} exitDir={exitDir} onSwipe={act} />
           ))}
         </AnimatePresence>
 
@@ -309,24 +357,28 @@ export default function App() {
         )}
       </section>
 
-      <div className="toast-slot" aria-live="polite">
-        {last?.action === 'delete' && pending.current && (
-          <div className="toast">
-            <span>Deleted {last.contact.name}</span>
-            <button onClick={undo}>Undo</button>
-          </div>
-        )}
-      </div>
-
       <footer className="actions">
+        <button
+          className={`round round-small round-star ${top?.starred ? 'is-on' : ''}`}
+          aria-label={top?.starred ? 'Remove from favorites' : 'Add to favorites'}
+          aria-pressed={!!top?.starred}
+          onClick={toggleStar}
+          disabled={deckEmpty}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z" /></svg>
+        </button>
         <button className="round round-delete" aria-label="Delete" onClick={() => act('delete')} disabled={deckEmpty}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <button className="round round-undo" aria-label="Undo last swipe" onClick={undo} disabled={!canUndo}>
+        <button className="round round-small round-undo" aria-label={`Undo last swipe (${history.length} available)`} onClick={undo} disabled={history.length === 0}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4 12l5 5M4 12h10a6 6 0 010 12" transform="translate(0 -3)" /></svg>
+          {history.length > 0 && <span className="badge">{history.length}</span>}
         </button>
         <button className="round round-keep" aria-label="Keep" onClick={() => act('keep')} disabled={deckEmpty}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+        </button>
+        <button className="round round-small round-more" aria-label={`Deal ${DAILY} more`} onClick={more} disabled={!canMore}>
+          +{DAILY}
         </button>
       </footer>
     </main>

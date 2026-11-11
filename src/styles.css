@@ -1,15 +1,28 @@
 /* Comic-book look: paper background, thick ink outlines, hard offset shadows.
    Colours live here so the palette is easy to swap. */
 :root {
-  --paper: #fbf3e4;
-  --paper-dot: #ecdfc6;
-  --ink: #1b1b1b;
-  --card: #fffdf7;
-  --yellow: #ffd23f;
-  --keep: #3dbe7b;
-  --delete: #ff5c5c;
-  --blue: #5b8def;
-  --muted: #6b6355;
+  /* Creator palette */
+  --parchment: #f2e3c6;
+  --cream: #f6f0e2;
+  --coral: #e5726b;
+  --peach: #ffb35c;
+  --pink: #eb5682;
+  --leaf: #63a442;
+  --violet: #724fb8;
+  --indigo: #2b2a4c;
+
+  /* How the app uses it */
+  --paper: var(--parchment);
+  --paper-dot: #e4d2ad; /* parchment, a shade darker */
+  --ink: var(--indigo);
+  --card: var(--cream);
+  --yellow: var(--peach); /* main accent: primary buttons, star */
+  --keep: var(--leaf);
+  --delete: var(--coral);
+  --blue: var(--violet);
+  --muted: #6a6782; /* indigo, softened */
+  --off: #e6d9bd; /* disabled buttons */
+  --rule: #d8c7a3; /* dashed dividers */
   --line: 3px solid var(--ink);
   --shadow: 5px 5px 0 var(--ink);
   --display: 'Abril Fatface', Georgia, 'Times New Roman', serif;
@@ -80,14 +93,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 1px 1px 0 var(--ink); }
 .btn-primary { background: var(--yellow); }
-.btn:disabled { background: #e9e2d3; color: var(--muted); box-shadow: none; cursor: not-allowed; }
+.btn:disabled { background: var(--off); color: var(--muted); box-shadow: none; cursor: not-allowed; }
 
 .notice {
   margin: 0;
   padding: 10px 14px;
   font-size: 15px;
   line-height: 1.35;
-  background: #ffe1dc;
+  background: #f8d3cf;
   border: var(--line);
   border-radius: 12px;
 }
@@ -200,10 +213,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-weight: 600;
   background: none;
   border: 0;
-  border-top: 2px solid #e9e2d3;
+  border-top: 2px solid var(--off);
 }
 
-.stack { position: relative; flex: 1; min-height: 0; margin: 4px 4px 0; }
+.stack { position: relative; flex: 1; min-height: 0; margin: 4px 4px 6px; }
 
 .card {
   position: absolute;
@@ -262,11 +275,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 .rows { width: 100%; margin: 20px 0 0; overflow: hidden; }
-.row { display: flex; gap: 12px; padding: 10px 2px; border-top: 2px dashed #d9cfba; }
+.row { display: flex; gap: 12px; padding: 10px 2px; border-top: 2px dashed var(--rule); }
 .row dt { flex: none; width: 70px; font-size: 13px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
 .row dd { margin: 0; min-width: 0; font-size: 17px; font-weight: 500; overflow-wrap: anywhere; }
 .extra { color: var(--muted); font-weight: 400; }
-.empty-rows { margin: 0; padding-top: 12px; border-top: 2px dashed #d9cfba; text-align: center; color: var(--muted); }
+.empty-rows { margin: 0; padding-top: 12px; border-top: 2px dashed var(--rule); text-align: center; color: var(--muted); }
 
 .stamp {
   position: absolute;
@@ -281,8 +294,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 10px;
   pointer-events: none;
 }
-.stamp-keep { left: 18px; color: #1f9d5c; transform: rotate(-14deg); }
-.stamp-delete { right: 18px; color: #e23b3b; transform: rotate(14deg); }
+.stamp-keep { left: 18px; color: #4c8a2f; transform: rotate(-14deg); }
+.stamp-delete { right: 18px; color: #cf4f48; transform: rotate(14deg); }
 
 /* ---------- done for today ---------- */
 
@@ -302,50 +315,77 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .done-cycle { padding: 10px 14px; background: var(--yellow); border: var(--line); border-radius: 12px; font-weight: 500; }
 .done .btn { margin-top: 6px; }
 
-/* ---------- toast + actions ---------- */
+/* ---------- bottom bar: star, delete, undo, keep, +10 ---------- */
 
-.toast-slot { height: 48px; display: flex; align-items: center; justify-content: center; }
-.toast {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  max-width: 100%;
-  padding: 7px 8px 7px 16px;
-  font-size: 15px;
-  color: var(--paper);
-  background: var(--ink);
-  border-radius: 999px;
-}
-.toast span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.toast button {
-  flex: none;
-  padding: 5px 14px;
-  font-weight: 700;
-  color: var(--ink);
-  background: var(--yellow);
-  border: 0;
-  border-radius: 999px;
-}
-
-.actions { display: flex; align-items: center; justify-content: center; gap: 26px; }
+.actions { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 6px; }
 
 .round {
+  position: relative;
+  flex: none;
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
+  width: 68px;
+  height: 68px;
+  padding: 0;
   border: var(--line);
   border-radius: 50%;
   box-shadow: 4px 4px 0 var(--ink);
   transition: transform 0.08s, box-shadow 0.08s;
 }
-.round svg { width: 34px; height: 34px; fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.round svg { width: 32px; height: 32px; fill: none; stroke: var(--ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 .round:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
 .round-delete { background: var(--delete); }
 .round-keep { background: var(--keep); }
-.round-undo { width: 54px; height: 54px; background: var(--card); }
-.round-undo svg { width: 26px; height: 26px; }
-.round:disabled { background: #e9e2d3; box-shadow: none; opacity: 0.55; cursor: not-allowed; }
+.round-small { width: 52px; height: 52px; background: var(--card); box-shadow: 3px 3px 0 var(--ink); }
+.round-small svg { width: 25px; height: 25px; stroke-width: 2.8; }
+.round-star.is-on { background: var(--yellow); }
+.round-star.is-on svg { fill: var(--ink); }
+.round-more { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; background: var(--yellow); }
+.round:disabled { background: var(--off); box-shadow: none; opacity: 0.55; cursor: not-allowed; }
+
+/* how many undos are available */
+.badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cream);
+  background: var(--ink);
+  border-radius: 999px;
+}
+
+/* favorite marker on the card */
+.fav {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: var(--yellow);
+  border: var(--line);
+  border-radius: 50%;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.fav svg { width: 22px; height: 22px; fill: var(--ink); stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+
+/* narrow phones: shrink the bottom bar so all five buttons fit */
+@media (max-width: 360px) {
+  .actions { gap: 8px; }
+  .round { width: 58px; height: 58px; }
+  .round svg { width: 28px; height: 28px; }
+  .round-small { width: 44px; height: 44px; }
+  .round-small svg { width: 21px; height: 21px; }
+  .round-more { font-size: 16px; }
+}
 
 @media (max-height: 640px) {
   .avatar { width: 92px; height: 92px; }

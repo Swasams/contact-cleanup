@@ -7,9 +7,11 @@ It is a small web app that runs entirely in your browser and can be added to a p
 ## What works today
 
 - **Swipe deck:** swipe right (or tap the green button) to keep, swipe left (or tap the red button) to delete.
-- **Undo:** a delete waits 5 seconds before it is sent to Google, and can be undone in that window. The last keep can be undone too.
+- **Undo:** the undo button takes back your last 3 swipes, keeps or deletes. A delete is only sent to Google once it can no longer be undone: when 3 newer swipes have happened, or when you leave the app.
+- **Star:** the star button marks the contact as a favorite. In Google Contacts this is the Starred group.
+- **On a computer:** right arrow keeps, left arrow deletes, Backspace or Ctrl+Z undoes.
 - **10 a day:** the first open of the day deals 10 cards. Unfinished cards come first the next day. Skipped days do not stack up.
-- **+10 more:** deal another 10 whenever you want, up to 100 in a day. At 100 the app tells you to stop.
+- **+10:** the +10 button deals another 10 whenever you want, up to 100 in a day. At 100 the app tells you to stop.
 - **Bag system:** nobody repeats until every contact has been shown once. Then the bag refills, reshuffles, and the next cycle starts.
 - **Demo mode:** made-up contacts, so anyone can try it without signing in.
 

@@ -7,7 +7,8 @@ const SCOPE = 'https://www.googleapis.com/auth/contacts';
 const API = 'https://people.googleapis.com/v1/';
 const TOKEN_KEY = 'cc.token';
 const STATE_KEY = 'cc.oauth_state';
-const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos';
+const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships';
+const STARRED = 'contactGroups/starred'; // Google's built-in "Starred" group = favorites
 
 export class AuthError extends Error {}
 
@@ -101,6 +102,7 @@ export function normalize(p) {
     title: org.title || '',
     birthday: b,
     photo,
+    starred: (p.memberships || []).some((m) => m.contactGroupMembership?.contactGroupResourceName === STARRED),
   };
 }
 
@@ -121,4 +123,13 @@ export async function fetchAllContacts(onProgress) {
 // keepalive lets the request finish even if the page is being closed.
 export function deleteContact(id, { keepalive = false } = {}) {
   return api(`${id}:deleteContact`, { method: 'DELETE', keepalive });
+}
+
+// Add a contact to, or remove it from, Google's "Starred" group.
+export function setStarred(id, starred) {
+  return api(`${STARRED}/members:modify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(starred ? { resourceNamesToAdd: [id] } : { resourceNamesToRemove: [id] }),
+  });
 }
