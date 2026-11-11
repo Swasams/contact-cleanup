@@ -32,9 +32,9 @@ const raw = [
 const extras = {
   0: { howMet: 'School', metYear: '2016', instagram: 'priya.demo', nickname: 'Pri', labels: ['Friends'] },
   6: { howMet: 'Work', metYear: '2021', discord: 'devon.demo', title: 'Producer', department: 'Publishing', website: 'tidewater.example.com' },
-  15: { howMet: 'Friend of a friend', instagram: 'kiki.demo', tiktok: 'kiki.demo', custom: { 'Dog name': 'Biscuit' } },
+  15: { howMet: 'Family', instagram: 'kiki.demo', tiktok: 'kiki.demo', custom: { 'Dog name': 'Biscuit' } },
   18: { address: '12 Lantern Row, Apt 3\nSpringfield', event: { year: 2022, month: 6, day: 4 } },
-  22: { howMet: 'Dating', metYear: '2023' },
+  22: { metYear: '2023' },
 };
 
 export const demoContacts = raw.map(([name, phone, email, org, birthday], i) =>

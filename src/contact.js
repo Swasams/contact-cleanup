@@ -9,7 +9,7 @@ export const CUSTOM_KEYS = {
   discord: 'Discord',
 };
 
-export const DEFAULT_TAGS = ['School', 'Work', 'Family', 'Friend of a friend', 'Dating', 'Neighbor', 'Online', 'Event', 'Travel', 'Service'];
+export const DEFAULT_TAGS = ['School', 'Work', 'Family'];
 
 // Every field, in the order it appears in details. Each one has a switch in
 // Settings: on = shown in details and editable, off = hidden. "on: true"
