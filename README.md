@@ -11,6 +11,7 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Star:** the star button marks the contact as a favorite. In Google Contacts this is the Starred group.
 - **Tap a card** to message, call or email the person (Messages, WhatsApp, phone, email, plus Instagram, TikTok and Discord once you add a handle).
 - **Swipe a card up** for details: quick tags for how and when you met, and an Edit button for the contact's fields. Tags and handles are saved to Google as custom fields.
+- **Settings** (in the menu): edit the list of how-we-met tags, and switch each contact field on or off. On shows it in details and makes it editable; off hides it.
 - **Deleting a favorite** asks you to confirm first.
 - **Instructions and Author's note** on the welcome screen and in the menu.
 - **On a computer:** right arrow keeps, left arrow deletes, up arrow opens details, Enter opens ways to reach, Backspace or Ctrl+Z undoes.
@@ -92,7 +93,8 @@ There is no server. Your contacts travel only between your browser and Google. T
 | `src/Card.jsx` | The contact card and its drag behaviour. |
 | `src/Details.jsx` | Swipe-up details: tags, year, edit form. |
 | `src/Reach.jsx` | Tap: ways to message or call. |
-| `src/contact.js` | Shared contact helpers, tag list, message links. |
+| `src/Settings.jsx` | Settings popup: tags tab and field switches tab. |
+| `src/contact.js` | The list of fields, the starting tag list, message links, shared helpers. |
 | `src/Modal.jsx` | The popup used everywhere. |
 | `src/Instructions.jsx` | The Instructions popup text. |
 | `src/AuthorsNote.jsx` | The Author's note text. Edit your words here. |

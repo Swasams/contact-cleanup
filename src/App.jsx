@@ -6,7 +6,8 @@ import Instructions from './Instructions.jsx';
 import AuthorsNote, { REPO_URL } from './AuthorsNote.jsx';
 import Reach from './Reach.jsx';
 import Details from './Details.jsx';
-import { applyDraft } from './contact.js';
+import Settings from './Settings.jsx';
+import { applyDraft, DEFAULT_TAGS, defaultOn } from './contact.js';
 import { demoContacts } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress } from './bag.js';
 import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, redirectUri } from './google.js';
@@ -44,6 +45,19 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popup, setPopup] = useState(null); // 'help' | 'note' | { kind: 'reach' | 'details', id, edit }
   const closePopup = useCallback(() => setPopup(null), []);
+
+  // Settings, remembered on this device.
+  const [tags, setTagsState] = useState(() => (Array.isArray(load('cc.tags')) ? load('cc.tags') : DEFAULT_TAGS));
+  const [fieldPrefs, setFieldPrefs] = useState(() => load('cc.fields') || {});
+  const setTags = useCallback((next) => { setTagsState(next); save('cc.tags', next); }, []);
+  const isOn = useCallback((key) => fieldPrefs[key] ?? defaultOn(key), [fieldPrefs]);
+  const setField = useCallback((key, on) => {
+    setFieldPrefs((prev) => {
+      const next = { ...prev, [key]: on };
+      save('cc.fields', next);
+      return next;
+    });
+  }, []);
 
   const historyRef = useRef([]);
   const modeRef = useRef(null);
@@ -279,7 +293,7 @@ export default function App() {
   const resetDemo = () => {
     ['cc.demo.deleted', 'cc.demo.starred', 'cc.demo.edits', 'cc.bag.demo', 'cc.pending.demo'].forEach((k) => localStorage.removeItem(k));
     setMenuOpen(false);
-    begin('demo', demoContacts.map((c) => ({ ...c, starred: false })));
+    begin('demo', demoContacts);
   };
 
   // ---------- screens ----------
@@ -304,7 +318,12 @@ export default function App() {
       )}
       {popup?.kind === 'details' && popupContact && (
         <Modal key="details" title={popupContact.name} onClose={closePopup}>
-          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} />
+          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tags} isOn={isOn} />
+        </Modal>
+      )}
+      {popup === 'settings' && (
+        <Modal key="settings" title="Settings" onClose={closePopup}>
+          <Settings tags={tags} setTags={setTags} isOn={isOn} setField={setField} />
         </Modal>
       )}
       {popup === 'help' && (
@@ -400,6 +419,7 @@ export default function App() {
         {menuOpen && (
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
+            <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('settings'); }}>Settings</button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('help'); }}>Instructions</button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('note'); }}>Author's note</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}
@@ -415,7 +435,7 @@ export default function App() {
       <section className="stack">
         <AnimatePresence custom={exitDir}>
           {visible.map((c) => (
-            <Card key={c.id} contact={c} isTop={c.id === top.id} exitDir={exitDir} onSwipe={act} onTap={openReach} onDetails={openDetails} />
+            <Card key={c.id} contact={c} isTop={c.id === top.id} exitDir={exitDir} onSwipe={act} onTap={openReach} onDetails={openDetails} isOn={isOn} />
           ))}
         </AnimatePresence>
 

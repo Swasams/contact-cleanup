@@ -464,6 +464,54 @@ textarea { resize: vertical; }
 .fields label span { font-size: 13px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--muted); }
 .fields .btn { margin-top: 6px; }
 
+.details-head.first { margin-top: 0; }
+.field-error { font-style: normal; font-size: 13px; font-weight: 600; color: var(--stamp-delete); }
+input[aria-invalid='true'] { border-color: var(--stamp-delete); }
+
+/* ---------- settings ---------- */
+
+.tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.tabs button {
+  flex: 1;
+  padding: 9px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--card);
+  border: var(--line);
+  border-radius: 12px;
+}
+.tabs button.is-on { color: var(--on-accent); background: var(--yellow); box-shadow: 3px 3px 0 var(--shade); }
+.hint { font-size: 14px; line-height: 1.4; color: var(--muted); margin: 0 0 12px; }
+.settings .inline { margin: 12px 0; }
+
+.tagchip-edit { display: inline-flex; align-items: center; gap: 6px; padding-right: 6px; }
+.tagchip-edit button { width: 24px; height: 24px; display: grid; place-items: center; padding: 0; background: var(--paper); border: 2px solid var(--edge); border-radius: 50%; }
+.tagchip-edit svg { width: 10px; height: 10px; fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; }
+
+.linkish { display: block; margin: 0 0 12px; padding: 0; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; color: var(--ink); background: none; border: 0; }
+.linkish:disabled { color: var(--off-ink); text-decoration: none; cursor: default; }
+
+.switches { list-style: none; margin: 0; padding: 0; }
+.switches li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 2px dashed var(--rule); }
+.switches li:first-child { border-top: 0; }
+.switch-label { font-size: 16px; font-weight: 500; }
+.switch-label em { display: block; font-style: normal; font-size: 12px; font-weight: 400; color: var(--muted); }
+.switch {
+  flex: none;
+  position: relative;
+  width: 54px;
+  height: 30px;
+  padding: 0;
+  background: var(--off);
+  border: var(--line);
+  border-radius: 999px;
+  transition: background 0.15s;
+}
+.switch .knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: var(--card); border: 2px solid var(--edge); border-radius: 50%; transition: transform 0.15s; }
+.switch.is-on { background: var(--keep); }
+.switch.is-on .knob { transform: translateX(24px); }
+
 /* ---------- done for today ---------- */
 
 .done {

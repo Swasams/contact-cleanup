@@ -1,7 +1,7 @@
 // Google sign-in + People API. Everything runs in the browser: the access
 // token and the contacts never touch any server other than Google's.
 
-import { CUSTOM_KEYS, draftOf, withDisplayName } from './contact.js';
+import { CUSTOM_KEYS, draftOf, parseDate, emptyContact, withDisplayName } from './contact.js';
 
 export const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
@@ -9,7 +9,7 @@ const SCOPE = 'https://www.googleapis.com/auth/contacts';
 const API = 'https://people.googleapis.com/v1/';
 const TOKEN_KEY = 'cc.token';
 const STATE_KEY = 'cc.oauth_state';
-const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships,userDefined,biographies';
+const FIELDS = 'names,phoneNumbers,emailAddresses,birthdays,organizations,photos,memberships,userDefined,biographies,nicknames,fileAses,addresses,events,urls,relations';
 const STARRED = 'contactGroups/starred'; // Google's built-in "Starred" group = favorites
 
 export class AuthError extends Error {}
@@ -87,30 +87,52 @@ async function api(path, opts = {}) {
   return res.status === 204 ? null : res.json();
 }
 
+let groupNames = {}; // label ID -> label name, filled in when contacts are loaded
+const OURS = new Set(Object.values(CUSTOM_KEYS));
+
 export function normalize(p) {
   const org = p.organizations?.[0] || {};
-  const custom = Object.fromEntries((p.userDefined || []).map((u) => [u.key, u.value]));
+  const n0 = p.names?.[0] || {};
+  const all = Object.fromEntries((p.userDefined || []).map((u) => [u.key, u.value]));
   return withDisplayName({
+    ...emptyContact(),
     id: p.resourceName,
-    realName: p.names?.[0]?.displayName || '',
+    realName: n0.displayName || '',
+    nickname: p.nicknames?.[0]?.value || '',
+    phonetic: n0.phoneticFullName || [n0.phoneticGivenName, n0.phoneticMiddleName, n0.phoneticFamilyName].filter(Boolean).join(' '),
+    fileAs: p.fileAses?.[0]?.value || '',
     phones: (p.phoneNumbers || []).map((x) => x.value).filter(Boolean),
     emails: (p.emailAddresses || []).map((x) => x.value).filter(Boolean),
     org: org.name || '',
     title: org.title || '',
+    department: org.department || '',
+    address: p.addresses?.[0]?.formattedValue || '',
     birthday: p.birthdays?.find((x) => x.date)?.date || null,
+    event: p.events?.find((x) => x.date)?.date || null,
+    website: p.urls?.[0]?.value || '',
+    relation: p.relations?.[0]?.person || '',
     photo: p.photos?.find((x) => !x.default)?.url || null,
     starred: (p.memberships || []).some((m) => m.contactGroupMembership?.contactGroupResourceName === STARRED),
+    labels: (p.memberships || []).map((m) => groupNames[m.contactGroupMembership?.contactGroupResourceName]).filter(Boolean),
     notes: p.biographies?.[0]?.value || '',
-    howMet: custom[CUSTOM_KEYS.howMet] || '',
-    metYear: custom[CUSTOM_KEYS.metYear] || '',
-    instagram: custom[CUSTOM_KEYS.instagram] || '',
-    tiktok: custom[CUSTOM_KEYS.tiktok] || '',
-    discord: custom[CUSTOM_KEYS.discord] || '',
+    howMet: all[CUSTOM_KEYS.howMet] || '',
+    metYear: all[CUSTOM_KEYS.metYear] || '',
+    instagram: all[CUSTOM_KEYS.instagram] || '',
+    tiktok: all[CUSTOM_KEYS.tiktok] || '',
+    discord: all[CUSTOM_KEYS.discord] || '',
+    custom: Object.fromEntries(Object.entries(all).filter(([k]) => !OURS.has(k))),
     raw: p, // the original record, needed to save edits without losing anything
   });
 }
 
 export async function fetchAllContacts(onProgress) {
+  // Label names first, so each contact can show which labels it has.
+  try {
+    const g = await api('contactGroups?pageSize=1000');
+    groupNames = Object.fromEntries((g.contactGroups || []).filter((x) => x.groupType === 'USER_CONTACT_GROUP').map((x) => [x.resourceName, x.name]));
+  } catch {
+    groupNames = {};
+  }
   const out = [];
   let pageToken = '';
   do {
@@ -140,41 +162,63 @@ export function setStarred(id, starred) {
 
 // Save edits from the details screen. Only the parts that actually changed are
 // sent, so untouched fields (and anything this app does not know about) stay as they are.
+// For fields that can hold several entries, only the first is edited; the rest are kept.
 export async function updateContact(contact, draft) {
   const before = draftOf(contact);
   const raw = contact.raw || {};
+  const val = (k) => (draft[k] || '').trim();
   const changed = (...keys) => keys.some((k) => (draft[k] || '') !== (before[k] || ''));
+  const strip = ({ metadata, formattedType, canonicalForm, ...rest }) => rest; // drop read-only parts
+  const rest = (field) => (raw[field] || []).slice(1).map(strip);
+  const keep = (obj, keys) => Object.fromEntries(keys.filter((k) => obj?.[k]).map((k) => [k, obj[k]]));
   const body = { etag: raw.etag };
   const mask = [];
+  // Replace the first entry of a list field (or remove it when the new one is null).
+  const put = (field, first) => {
+    mask.push(field);
+    body[field] = [...(first ? [first] : []), ...rest(field)];
+  };
 
-  if (changed('realName')) {
+  if (changed('realName', 'phonetic')) {
+    const n0 = raw.names?.[0] || {};
+    const name = changed('realName')
+      ? (val('realName') ? { unstructuredName: val('realName') } : {})
+      : keep(n0, ['givenName', 'middleName', 'familyName', 'honorificPrefix', 'honorificSuffix']);
+    const phon = changed('phonetic')
+      ? (val('phonetic') ? { phoneticFullName: val('phonetic') } : {})
+      : keep(n0, ['phoneticGivenName', 'phoneticMiddleName', 'phoneticFamilyName', 'phoneticFullName']);
+    const merged = { ...name, ...phon };
     mask.push('names');
-    body.names = draft.realName.trim() ? [{ unstructuredName: draft.realName.trim() }] : [];
+    body.names = Object.keys(merged).length ? [merged] : [];
   }
-  if (changed('phone')) {
-    mask.push('phoneNumbers');
-    const rest = (raw.phoneNumbers || []).slice(1).map(({ value, type }) => ({ value, type }));
-    body.phoneNumbers = [...(draft.phone.trim() ? [{ value: draft.phone.trim(), type: raw.phoneNumbers?.[0]?.type }] : []), ...rest];
+  if (changed('nickname')) put('nicknames', val('nickname') ? { value: val('nickname') } : null);
+  if (changed('fileAs')) put('fileAses', val('fileAs') ? { value: val('fileAs') } : null);
+  if (changed('phone')) put('phoneNumbers', val('phone') ? { value: val('phone'), type: raw.phoneNumbers?.[0]?.type } : null);
+  if (changed('email')) put('emailAddresses', val('email') ? { value: val('email'), type: raw.emailAddresses?.[0]?.type } : null);
+  if (changed('org', 'title', 'department')) {
+    const any = val('org') || val('title') || val('department');
+    put('organizations', any ? { name: val('org'), title: val('title'), department: val('department'), type: raw.organizations?.[0]?.type } : null);
   }
-  if (changed('email')) {
-    mask.push('emailAddresses');
-    const rest = (raw.emailAddresses || []).slice(1).map(({ value, type }) => ({ value, type }));
-    body.emailAddresses = [...(draft.email.trim() ? [{ value: draft.email.trim(), type: raw.emailAddresses?.[0]?.type }] : []), ...rest];
+  if (changed('address')) put('addresses', val('address') ? { streetAddress: val('address'), type: raw.addresses?.[0]?.type } : null);
+  if (changed('birthday')) {
+    const d = parseDate(draft.birthday);
+    if (d !== undefined) put('birthdays', d ? { date: d } : null);
   }
-  if (changed('org', 'title')) {
-    mask.push('organizations');
-    const rest = (raw.organizations || []).slice(1).map(({ name, title, type }) => ({ name, title, type }));
-    body.organizations = [...(draft.org.trim() || draft.title.trim() ? [{ name: draft.org.trim(), title: draft.title.trim() }] : []), ...rest];
+  if (changed('event')) {
+    const d = parseDate(draft.event);
+    if (d !== undefined) put('events', d ? { date: d, type: raw.events?.[0]?.type || 'anniversary' } : null);
   }
+  if (changed('website')) put('urls', val('website') ? { value: val('website'), type: raw.urls?.[0]?.type } : null);
+  if (changed('relation')) put('relations', val('relation') ? { person: val('relation'), type: raw.relations?.[0]?.type || 'friend' } : null);
   if (changed('notes')) {
     mask.push('biographies');
-    body.biographies = draft.notes.trim() ? [{ value: draft.notes, contentType: 'TEXT_PLAIN' }] : [];
+    body.biographies = val('notes') ? [{ value: draft.notes, contentType: 'TEXT_PLAIN' }] : [];
   }
-  if (changed(...Object.keys(CUSTOM_KEYS))) {
+  const customKeys = Object.keys({ ...before, ...draft }).filter((k) => k.startsWith('custom:'));
+  if (changed(...Object.keys(CUSTOM_KEYS), ...customKeys)) {
     mask.push('userDefined');
-    const ours = new Set(Object.values(CUSTOM_KEYS));
-    const others = (raw.userDefined || []).filter((u) => !ours.has(u.key)).map(({ key, value }) => ({ key, value }));
-    const mine = Object.entries(CUSTOM_KEYS).filter(([k]) => (draft[k] || '').trim()).map(([k, key]) => ({ key, value: draft[k].trim() }));
+    const mine = Object.entries(CUSTOM_KEYS).filter(([k]) => val(k)).map(([k, key]) => ({ key, value: val(k) }));
+    const others = customKeys.filter((k) => val(k)).map((k) => ({ key: k.slice(7), value: val(k) }));
     body.userDefined = [...others, ...mine];
   }
   if (!mask.length) return contact;

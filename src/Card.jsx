@@ -47,19 +47,22 @@ const variants = {
   exit: (dir) => ({ x: dir * (window.innerWidth / 2 + 320), opacity: 0, transition: { duration: 0.3 } }),
 };
 
-export default function Card({ contact, isTop, exitDir, onSwipe, onTap, onDetails }) {
+export default function Card({ contact, isTop, exitDir, onSwipe, onTap, onDetails, isOn }) {
   const dragged = useRef(false);
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-220, 220], [-12, 12]);
   const keepOpacity = useTransform(x, [30, 120], [0, 1]);
   const deleteOpacity = useTransform(x, [-120, -30], [1, 0]);
 
+  // Rows on the card follow the field switches in Settings.
+  const work = [isOn('title') && contact.title, isOn('org') && contact.org].filter((v) => v && v !== contact.name).join(', ');
+  const met = [isOn('howMet') && tagsOf(contact.howMet).join(', '), isOn('metYear') && contact.metYear].filter(Boolean).join(' · ');
   const rows = [
-    ['Phone', contact.phones[0], contact.phones.length - 1],
-    ['Email', contact.emails[0], contact.emails.length - 1],
-    ['Work', [contact.title, contact.org].filter((v) => v && v !== contact.name).join(', '), 0],
-    ['Birthday', birthdayText(contact.birthday), 0],
-    ['Met', [tagsOf(contact.howMet).join(', '), contact.metYear].filter(Boolean).join(' · '), 0],
+    ['Phone', isOn('phone') && contact.phones[0], contact.phones.length - 1],
+    ['Email', isOn('email') && contact.emails[0], contact.emails.length - 1],
+    ['Work', work, 0],
+    ['Birthday', isOn('birthday') && birthdayText(contact.birthday), 0],
+    ['Met', met, 0],
   ].filter(([, value]) => value);
 
   return (

@@ -1,35 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
-import { MET_OPTIONS, draftOf, sameDraft, tagsOf } from './contact.js';
+import { FIELD_DEFS, draftOf, sameDraft, tagsOf, parseDate, fmtDate } from './contact.js';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const THIS_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: THIS_YEAR - 1979 }, (_, i) => String(THIS_YEAR - i));
+const INPUT = { text: 'text', tel: 'tel', email: 'email', url: 'url', handle: 'text', date: 'text' };
 
-const FIELDS = [
-  ['realName', 'Name', 'text', 'name'],
-  ['phone', 'Phone', 'tel', 'tel'],
-  ['email', 'Email', 'email', 'email'],
-  ['org', 'Company', 'text', 'organization'],
-  ['title', 'Job title', 'text', 'organization-title'],
-  ['instagram', 'Instagram', 'text', 'off'],
-  ['tiktok', 'TikTok', 'text', 'off'],
-  ['discord', 'Discord', 'text', 'off'],
-];
-
-// Swipe a card up: everything saved on the contact, quick "how we met" tags,
-// and an Edit button for the contact's fields.
-export default function Details({ contact, startEditing = false, onSave }) {
+// Swipe a card up: quick "how we met" tags, everything saved on the contact,
+// and an Edit button. Only fields switched on in Settings appear here.
+export default function Details({ contact, startEditing = false, onSave, tagOptions, isOn }) {
   const [draft, setDraft] = useState(() => draftOf(contact));
   const [editing, setEditing] = useState(startEditing);
   const [custom, setCustom] = useState('');
+  const [errors, setErrors] = useState({});
   const saved = useRef(draftOf(contact));
   const latest = useRef(draft);
   latest.current = draft;
 
+  const dateKeys = FIELD_DEFS.filter((f) => f.type === 'date').map((f) => f.key);
+  const badDates = (d) => dateKeys.filter((k) => parseDate(d[k]) === undefined);
+
   const commit = (d) => {
-    if (sameDraft(d, saved.current)) return;
-    saved.current = d;
-    onSave(d);
+    // A date that cannot be read is put back the way it was rather than saved.
+    const clean = { ...d };
+    badDates(d).forEach((k) => { clean[k] = saved.current[k]; });
+    if (sameDraft(clean, saved.current)) return;
+    saved.current = clean;
+    onSave(clean);
   };
 
   // Tags save themselves: anything still unsaved is saved when the popup closes.
@@ -44,69 +40,110 @@ export default function Details({ contact, startEditing = false, onSave }) {
     setCustom('');
   };
 
-  const b = contact.birthday;
+  const save = (e) => {
+    e.preventDefault();
+    const bad = badDates(draft);
+    setErrors(Object.fromEntries(bad.map((k) => [k, true])));
+    if (bad.length) return;
+    commit(draft);
+    setEditing(false);
+  };
+
+  // The plain fields (everything except tags, year, custom and labels) that are switched on.
+  const plain = FIELD_DEFS.filter((f) => INPUT[f.type] || f.type === 'textarea').filter((f) => isOn(f.key));
+  const customKeys = isOn('custom') ? Object.keys(draft).filter((k) => k.startsWith('custom:')) : [];
+  const labels = isOn('labels') ? contact.labels || [] : [];
   const extras = [
-    ...contact.phones.slice(1).map((v) => ['Other phone', v]),
-    ...contact.emails.slice(1).map((v) => ['Other email', v]),
-    ...(b && b.month && b.day ? [['Birthday', `${MONTHS[b.month - 1]} ${b.day}${b.year ? ', ' + b.year : ''}`]] : []),
+    ...(isOn('phone') ? contact.phones.slice(1).map((v) => ['Other phone', v]) : []),
+    ...(isOn('email') ? contact.emails.slice(1).map((v) => ['Other email', v]) : []),
   ];
+  const shown = (f) => (f.type === 'date' ? fmtDate(parseDate(draft[f.key]) || null) || draft[f.key] : draft[f.key]);
+  const nothing = !plain.some((f) => draft[f.key]) && !extras.length && !customKeys.some((k) => draft[k]) && !labels.length;
+  const anyEditable = plain.length > 0 || customKeys.length > 0;
 
   return (
     <div className="details">
-      <section>
-        <h3 className="first">How we met</h3>
-        <div className="tagchips">
-          {[...MET_OPTIONS, ...tags.filter((t) => !MET_OPTIONS.includes(t))].map((t) => (
-            <button key={t} className={`tagchip ${tags.includes(t) ? 'is-on' : ''}`} aria-pressed={tags.includes(t)} onClick={() => toggleTag(t)}>
-              {t}
-            </button>
-          ))}
-        </div>
-        <form className="inline" onSubmit={(e) => { e.preventDefault(); addCustom(); }}>
-          <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Something else…" aria-label="Add your own tag" maxLength={40} />
-          <button className="btn btn-small" type="submit" disabled={!custom.trim()}>Add</button>
-        </form>
-      </section>
+      {isOn('howMet') && (
+        <section>
+          <h3 className="first">How we met</h3>
+          <div className="tagchips">
+            {[...tagOptions, ...tags.filter((t) => !tagOptions.includes(t))].map((t) => (
+              <button key={t} className={`tagchip ${tags.includes(t) ? 'is-on' : ''}`} aria-pressed={tags.includes(t)} onClick={() => toggleTag(t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+          <form className="inline" onSubmit={(e) => { e.preventDefault(); addCustom(); }}>
+            <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Something else…" aria-label="Add your own tag" maxLength={40} />
+            <button className="btn btn-small" type="submit" disabled={!custom.trim()}>Add</button>
+          </form>
+        </section>
+      )}
+
+      {isOn('metYear') && (
+        <section>
+          <h3 className={isOn('howMet') ? '' : 'first'}>When we met</h3>
+          <select value={draft.metYear} onChange={(e) => set('metYear', e.target.value)} aria-label="Year we met">
+            <option value="">Not sure</option>
+            {draft.metYear && !YEARS.includes(draft.metYear) && <option value={draft.metYear}>{draft.metYear}</option>}
+            {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </section>
+      )}
 
       <section>
-        <h3>When</h3>
-        <select value={draft.metYear} onChange={(e) => set('metYear', e.target.value)} aria-label="Year we met">
-          <option value="">Not sure</option>
-          {draft.metYear && !YEARS.includes(draft.metYear) && <option value={draft.metYear}>{draft.metYear}</option>}
-          {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-        </select>
-      </section>
-
-      <section>
-        <div className="details-head">
+        <div className={`details-head ${isOn('howMet') || isOn('metYear') ? '' : 'first'}`}>
           <h3>Contact details</h3>
-          {!editing && <button className="btn btn-small edit-btn" onClick={() => setEditing(true)}>Edit</button>}
+          {!editing && anyEditable && <button className="btn btn-small edit-btn" onClick={() => setEditing(true)}>Edit</button>}
         </div>
 
         {editing ? (
-          <form className="fields" onSubmit={(e) => { e.preventDefault(); commit(draft); setEditing(false); }}>
-            {FIELDS.map(([key, label, type, auto]) => (
-              <label key={key}>
-                <span>{label}</span>
-                <input type={type} value={draft[key]} autoComplete={auto} autoCapitalize={type === 'text' && key !== 'realName' && key !== 'org' && key !== 'title' ? 'none' : undefined} onChange={(e) => set(key, e.target.value)} />
+          <form className="fields" onSubmit={save} noValidate>
+            {plain.map((f) => (
+              <label key={f.key}>
+                <span>{f.label}</span>
+                {f.type === 'textarea' ? (
+                  <textarea rows={f.key === 'notes' ? 3 : 2} value={draft[f.key]} onChange={(e) => set(f.key, e.target.value)} />
+                ) : (
+                  <input
+                    type={INPUT[f.type]}
+                    value={draft[f.key]}
+                    placeholder={f.type === 'date' ? 'MM/DD/YYYY (year optional)' : undefined}
+                    inputMode={f.type === 'date' ? 'numeric' : undefined}
+                    autoCapitalize={['handle', 'email', 'url'].includes(f.type) ? 'none' : undefined}
+                    autoComplete="off"
+                    aria-invalid={!!errors[f.key]}
+                    onChange={(e) => { set(f.key, e.target.value); setErrors((er) => ({ ...er, [f.key]: false })); }}
+                  />
+                )}
+                {errors[f.key] && <em className="field-error">Use MM/DD or MM/DD/YYYY.</em>}
               </label>
             ))}
-            <label>
-              <span>Notes</span>
-              <textarea rows={3} value={draft.notes} onChange={(e) => set('notes', e.target.value)} />
-            </label>
+            {customKeys.map((k) => (
+              <label key={k}>
+                <span>{k.slice(7)}</span>
+                <input type="text" value={draft[k]} autoComplete="off" onChange={(e) => set(k, e.target.value)} />
+              </label>
+            ))}
             <button className="btn btn-primary" type="submit">Save</button>
           </form>
         ) : (
           <dl className="rows">
-            {FIELDS.filter(([key]) => draft[key]).map(([key, label]) => (
-              <div className="row" key={key}><dt>{label}</dt><dd>{draft[key]}</dd></div>
+            {plain.filter((f) => draft[f.key]).map((f) => (
+              <div className="row" key={f.key}><dt>{f.label}</dt><dd className={f.type === 'textarea' ? 'pre' : ''}>{shown(f)}</dd></div>
             ))}
             {extras.map(([label, value], i) => (
               <div className="row" key={label + i}><dt>{label}</dt><dd>{value}</dd></div>
             ))}
-            {draft.notes && <div className="row"><dt>Notes</dt><dd className="pre">{draft.notes}</dd></div>}
-            {!FIELDS.some(([key]) => draft[key]) && !extras.length && !draft.notes && <p className="empty-rows">Nothing saved yet. Tap Edit to add details.</p>}
+            {customKeys.filter((k) => draft[k]).map((k) => (
+              <div className="row" key={k}><dt>{k.slice(7)}</dt><dd>{draft[k]}</dd></div>
+            ))}
+            {labels.length > 0 && <div className="row"><dt>Labels</dt><dd>{labels.join(', ')}</dd></div>}
+            {nothing && (
+              <p className="empty-rows">
+                {anyEditable ? 'Nothing saved yet. Tap Edit to add details.' : 'Every field is switched off. Turn some on in Settings.'}
+              </p>
+            )}
           </dl>
         )}
       </section>
