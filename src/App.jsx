@@ -147,6 +147,20 @@ export default function App() {
     setLast(null);
   }, [last]);
 
+  // On a computer: arrow keys swipe, Backspace or Ctrl/Cmd+Z undoes.
+  useEffect(() => {
+    if (screen !== 'deck') return;
+    const onKey = (e) => {
+      if (e.key === 'ArrowRight') act('keep');
+      else if (e.key === 'ArrowLeft') act('delete');
+      else if (e.key === 'Backspace' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z')) undo();
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [screen, act, undo]);
+
   // "+10 more", never going past the daily cap.
   const more = () =>
     setBag((b) => {

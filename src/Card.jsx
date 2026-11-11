@@ -33,7 +33,8 @@ const variants = {
   enter: { scale: 0.9, y: 24, opacity: 0 },
   top: { scale: 1, y: 0, opacity: 1 },
   behind: { scale: 0.94, y: 16, opacity: 1 },
-  exit: (dir) => ({ x: dir * 460, opacity: 0, transition: { duration: 0.22 } }),
+  // travel far enough to leave the window, however wide it is
+  exit: (dir) => ({ x: dir * (window.innerWidth / 2 + 320), opacity: 0, transition: { duration: 0.3 } }),
 };
 
 export default function Card({ contact, isTop, exitDir, onSwipe }) {

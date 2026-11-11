@@ -20,6 +20,10 @@
 
 html, body, #root { height: 100%; }
 
+/* The window itself clips, not the centre column, so on a wide screen a
+   swiped card can travel all the way across. */
+html, body { overflow: hidden; }
+
 body {
   margin: 0;
   font-family: var(--body);
@@ -44,7 +48,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding: calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 18px);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 .center { align-items: center; justify-content: center; gap: 18px; }
