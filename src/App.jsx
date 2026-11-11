@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import Card from './Card.jsx';
+import Modal from './Modal.jsx';
+import Instructions from './Instructions.jsx';
+import AuthorsNote, { REPO_URL } from './AuthorsNote.jsx';
 import { demoContacts } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress } from './bag.js';
 import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, redirectUri } from './google.js';
 
 const UNDO_DEPTH = 3; // how many recent swipes can be undone
+
+// Welcome screen entrance: each piece fades up, one after another.
+const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } } };
+const rise = { hidden: { opacity: 0, y: 22 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 320, damping: 26 } } };
+const dealBack = { hidden: { opacity: 0, y: -60, x: '-30%', rotate: 40 }, show: { opacity: 1, y: 0, x: '-30%', rotate: 9, transition: { type: 'spring', stiffness: 260, damping: 18 } } };
+const dealFront = { hidden: { opacity: 0, y: -60, x: '-62%', rotate: -40 }, show: { opacity: 1, y: 0, x: '-62%', rotate: -7, transition: { type: 'spring', stiffness: 260, damping: 18, delay: 0.12 } } };
 
 const load = (key) => {
   try {
@@ -30,6 +39,8 @@ export default function App() {
   const [exitDir, setExitDir] = useState(1);
   const [notice, setNotice] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [popup, setPopup] = useState(null); // 'help' | 'note'
+  const closePopup = useCallback(() => setPopup(null), []);
 
   const historyRef = useRef([]);
   const modeRef = useRef(null);
@@ -206,7 +217,7 @@ export default function App() {
 
   // On a computer: arrow keys swipe, Backspace or Ctrl/Cmd+Z undoes.
   useEffect(() => {
-    if (screen !== 'deck') return;
+    if (screen !== 'deck' || popup) return;
     const onKey = (e) => {
       if (e.key === 'ArrowRight') act('keep');
       else if (e.key === 'ArrowLeft') act('delete');
@@ -216,7 +227,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, act, undo]);
+  }, [screen, popup, act, undo]);
 
   const leave = () => {
     flushDeletes();
@@ -237,36 +248,63 @@ export default function App() {
 
   // ---------- screens ----------
 
+  const popups = (
+    <AnimatePresence>
+      {popup === 'help' && (
+        <Modal key="help" title="Instructions" onClose={closePopup}>
+          <Instructions />
+        </Modal>
+      )}
+      {popup === 'note' && (
+        <Modal key="note" title="Author's note" onClose={closePopup}>
+          <AuthorsNote />
+        </Modal>
+      )}
+    </AnimatePresence>
+  );
+
   if (screen === 'welcome') {
     return (
-      <main className="screen welcome">
-        <div className="welcome-art" aria-hidden="true">
-          <div className="mini mini-back" />
-          <div className="mini mini-front">
-            <span className="mini-dot" />
-            <span className="mini-line" />
-            <span className="mini-line short" />
+      <MotionConfig reducedMotion="user">
+        <motion.main className="screen welcome" variants={stagger} initial="hidden" animate="show">
+          <div className="welcome-art" aria-hidden="true">
+            <motion.div className="mini mini-back" variants={dealBack} />
+            <motion.div className="mini mini-front" variants={dealFront}>
+              <span className="mini-dot" />
+              <span className="mini-line" />
+              <span className="mini-line short" />
+            </motion.div>
           </div>
-        </div>
-        <h1 className="title">Who Dis?</h1>
-        <p className="lede">
-          Swipe through your contacts, {DAILY} a day. Left to delete, right to keep.
-        </p>
-        {notice && <p className="notice" role="alert">{notice}</p>}
-        <button className="btn btn-primary" onClick={startSignIn} disabled={!CLIENT_ID}>
-          Connect Google Contacts
-        </button>
-        {!CLIENT_ID && (
-          <p className="setup-note">
-            Google sign-in is not set up in this copy yet. Add a client ID (README, step 2) with this redirect address:
-            <code>{redirectUri()}</code>
-          </p>
-        )}
-        <button className="btn" onClick={startDemo}>Try the demo</button>
-        <p className="fineprint">
-          Your contacts stay between this browser and Google. Nothing is sent anywhere else.
-        </p>
-      </main>
+          <motion.h1 className="title" variants={rise}>Who Dis?</motion.h1>
+          <motion.p className="lede" variants={rise}>
+            Swipe through your contacts, {DAILY} a day. Left to delete, right to keep.
+          </motion.p>
+          {notice && <p className="notice" role="alert">{notice}</p>}
+          <motion.button className="btn btn-primary" variants={rise} onClick={startSignIn} disabled={!CLIENT_ID}>
+            Connect Google Contacts
+          </motion.button>
+          {!CLIENT_ID && (
+            <motion.p className="setup-note" variants={rise}>
+              Google sign-in is not set up in this copy yet. Add a client ID (README, step 2) with this redirect address:
+              <code>{redirectUri()}</code>
+            </motion.p>
+          )}
+          <motion.button className="btn" variants={rise} onClick={startDemo}>Try the demo</motion.button>
+          <motion.div className="btn-row" variants={rise}>
+            <button className="btn btn-small" onClick={() => setPopup('help')}>Instructions</button>
+            <button className="btn btn-small" onClick={() => setPopup('note')}>Author's note</button>
+          </motion.div>
+          <motion.div className="fineprint" variants={rise}>
+            <p>Your contacts stay between this browser and Google. Nothing is sent anywhere else.</p>
+            <p>
+              I'm not saving anything, but I'm also not well versed in security. I did my best to make sure that
+              anything that is saved stays locally on your device. If you know this stuff and see I messed up, please{' '}
+              <a href={`${REPO_URL}/issues`} target="_blank" rel="noreferrer">let me know</a>.
+            </p>
+          </motion.div>
+        </motion.main>
+        {popups}
+      </MotionConfig>
     );
   }
 
@@ -287,6 +325,7 @@ export default function App() {
   const canMore = !p.capReached && contacts.length > 0;
 
   return (
+    <MotionConfig reducedMotion="user">
     <main className="screen deck">
       <header className="bar">
         <div className="progress">
@@ -304,6 +343,8 @@ export default function App() {
         {menuOpen && (
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
+            <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('help'); }}>Instructions</button>
+            <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('note'); }}>Author's note</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}
             <button role="menuitem" onClick={leave}>{mode === 'demo' ? 'Exit demo' : 'Sign out'}</button>
           </div>
@@ -370,9 +411,8 @@ export default function App() {
         <button className="round round-delete" aria-label="Delete" onClick={() => act('delete')} disabled={deckEmpty}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <button className="round round-small round-undo" aria-label={`Undo last swipe (${history.length} available)`} onClick={undo} disabled={history.length === 0}>
+        <button className="round round-small round-undo" aria-label="Undo last swipe" onClick={undo} disabled={history.length === 0}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7L4 12l5 5M4 12h10a6 6 0 010 12" transform="translate(0 -3)" /></svg>
-          {history.length > 0 && <span className="badge">{history.length}</span>}
         </button>
         <button className="round round-keep" aria-label="Keep" onClick={() => act('keep')} disabled={deckEmpty}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
@@ -382,5 +422,7 @@ export default function App() {
         </button>
       </footer>
     </main>
+    {popups}
+    </MotionConfig>
   );
 }

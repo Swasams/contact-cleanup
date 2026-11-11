@@ -5,11 +5,11 @@ const SWIPE_VELOCITY = 700; // or a fast flick
 
 // Avatar colours from the creator palette: [background, text]
 const COLORS = [
-  ['#FFB35C', '#2B2A4C'], // peach
-  ['#E5726B', '#2B2A4C'], // coral
-  ['#EB5682', '#F6F0E2'], // pink
-  ['#63A442', '#F6F0E2'], // leaf green
-  ['#724FB8', '#F6F0E2'], // violet
+  ['#FFA532', '#2B2A4C'], // peach
+  ['#E9584C', '#2B2A4C'], // coral
+  ['#E63B72', '#FFFBF3'], // pink
+  ['#4B9A2A', '#FFFBF3'], // leaf green
+  ['#6537BF', '#FFFBF3'], // violet
 ];
 
 function initials(name) {

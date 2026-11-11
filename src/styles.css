@@ -3,26 +3,27 @@
 :root {
   /* Creator palette */
   --parchment: #f2e3c6;
-  --cream: #f6f0e2;
-  --coral: #e5726b;
-  --peach: #ffb35c;
-  --pink: #eb5682;
-  --leaf: #63a442;
-  --violet: #724fb8;
+  --cream: #fffbf3;
+  --coral: #e9584c;
+  --peach: #ffa532;
+  --pink: #e63b72;
+  --leaf: #4b9a2a;
+  --violet: #6537bf;
   --indigo: #2b2a4c;
 
   /* How the app uses it */
   --paper: var(--parchment);
-  --paper-dot: #e4d2ad; /* parchment, a shade darker */
+  --paper-dot: #dcc594; /* parchment, a shade darker */
   --ink: var(--indigo);
   --card: var(--cream);
   --yellow: var(--peach); /* main accent: primary buttons, star */
   --keep: var(--leaf);
   --delete: var(--coral);
   --blue: var(--violet);
-  --muted: #6a6782; /* indigo, softened */
-  --off: #e6d9bd; /* disabled buttons */
-  --rule: #d8c7a3; /* dashed dividers */
+  --muted: #4f4c6b; /* indigo, softened */
+  --off: #d6d1c6; /* greyed out: anything you cannot use right now */
+  --off-ink: #9a968c;
+  --rule: #cdb98c; /* dashed dividers */
   --line: 3px solid var(--ink);
   --shadow: 5px 5px 0 var(--ink);
   --display: 'Abril Fatface', Georgia, 'Times New Roman', serif;
@@ -79,6 +80,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lede { font-size: 19px; line-height: 1.4; margin: 0; }
 
 .fineprint { font-size: 14px; line-height: 1.4; color: var(--muted); margin: 0; }
+div.fineprint { display: flex; flex-direction: column; gap: 8px; }
+div.fineprint p { margin: 0; }
+a { color: inherit; font-weight: 600; text-decoration-thickness: 2px; text-underline-offset: 2px; }
 
 .btn {
   width: 100%;
@@ -93,21 +97,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 1px 1px 0 var(--ink); }
 .btn-primary { background: var(--yellow); }
-.btn:disabled { background: var(--off); color: var(--muted); box-shadow: none; cursor: not-allowed; }
+.btn:disabled { background: var(--off); color: var(--off-ink); border-color: var(--off-ink); box-shadow: none; cursor: not-allowed; }
 
 .notice {
   margin: 0;
   padding: 10px 14px;
   font-size: 15px;
   line-height: 1.35;
-  background: #f8d3cf;
+  background: #fbd0cb;
   border: var(--line);
   border-radius: 12px;
 }
 
 /* ---------- welcome ---------- */
 
-.welcome { justify-content: center; gap: 16px; }
+/* Scrolls if the screen is short; otherwise the content sits centred. */
+.welcome { gap: 16px; overflow-y: auto; }
+.welcome > :first-child { margin-top: auto; }
+.welcome > :last-child { margin-bottom: auto; }
+.welcome > * { flex: none; }
+
+.btn-row { display: flex; gap: 12px; }
+.btn-small { padding: 11px 10px; font-size: 16px; border-radius: 14px; box-shadow: 4px 4px 0 var(--ink); }
 
 .welcome-art { position: relative; height: 150px; margin-bottom: 6px; }
 .mini {
@@ -119,10 +130,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 14px;
   box-shadow: var(--shadow);
 }
-.mini-back { background: var(--delete); transform: translateX(-30%) rotate(9deg); top: 6px; }
+.mini-back { background: var(--delete); top: 6px; }
 .mini-front {
   background: var(--card);
-  transform: translateX(-62%) rotate(-7deg);
   top: 12px;
   display: flex;
   flex-direction: column;
@@ -148,6 +158,53 @@ button { font: inherit; color: inherit; cursor: pointer; }
   user-select: all;
   -webkit-user-select: all;
 }
+
+/* ---------- popups (instructions, author's note) ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 16px);
+  background: rgba(43, 42, 76, 0.55);
+}
+.sheet {
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.sheet-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 16px 14px 20px; background: var(--yellow); border-bottom: var(--line); }
+.sheet-head h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1; }
+.sheet-close { flex: none; width: 40px; height: 40px; display: grid; place-items: center; padding: 0; background: var(--card); border: var(--line); border-radius: 50%; box-shadow: 2px 2px 0 var(--ink); }
+.sheet-close svg { width: 18px; height: 18px; fill: none; stroke: var(--ink); stroke-width: 3.4; stroke-linecap: round; }
+.sheet-body { padding: 18px 20px 22px; overflow-y: auto; -webkit-overflow-scrolling: touch; font-size: 16px; line-height: 1.45; }
+.sheet-body h3 { margin: 20px 0 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; color: var(--muted); }
+.sheet-body p { margin: 0 0 12px; }
+.sheet-body p:last-child { margin-bottom: 0; }
+
+.controls { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.controls li { display: flex; gap: 14px; align-items: flex-start; }
+.controls strong { font-size: 17px; }
+.controls p { margin: 2px 0 0; color: var(--muted); font-size: 15px; line-height: 1.4; }
+.chip { flex: none; width: 44px; height: 44px; display: grid; place-items: center; font-size: 15px; font-weight: 700; background: var(--card); border: var(--line); border-radius: 50%; box-shadow: 2px 2px 0 var(--ink); }
+.chip svg { width: 22px; height: 22px; fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.chip-keep { background: var(--keep); }
+.chip-delete { background: var(--delete); }
+.chip-star, .chip-more { background: var(--yellow); }
+.chip-star svg { fill: var(--ink); stroke-width: 1.5; }
+.plain { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 
 /* ---------- loading ---------- */
 
@@ -294,8 +351,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 10px;
   pointer-events: none;
 }
-.stamp-keep { left: 18px; color: #4c8a2f; transform: rotate(-14deg); }
-.stamp-delete { right: 18px; color: #cf4f48; transform: rotate(14deg); }
+.stamp-keep { left: 18px; color: #3d8420; transform: rotate(-14deg); }
+.stamp-delete { right: 18px; color: #d23f33; transform: rotate(14deg); }
 
 /* ---------- done for today ---------- */
 
@@ -341,25 +398,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .round-star.is-on { background: var(--yellow); }
 .round-star.is-on svg { fill: var(--ink); }
 .round-more { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; background: var(--yellow); }
-.round:disabled { background: var(--off); box-shadow: none; opacity: 0.55; cursor: not-allowed; }
-
-/* how many undos are available */
-.badge {
-  position: absolute;
-  top: -7px;
-  right: -7px;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 5px;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--cream);
-  background: var(--ink);
-  border-radius: 999px;
-}
+.round:disabled { background: var(--off); color: var(--off-ink); border-color: var(--off-ink); box-shadow: none; cursor: not-allowed; }
+.round:disabled svg { stroke: var(--off-ink); fill: none; }
 
 /* favorite marker on the card */
 .fav {
