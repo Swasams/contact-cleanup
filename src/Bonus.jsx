@@ -78,7 +78,7 @@ export default function Bonus({ level, people, onClose }) {
 
   return (
     <motion.div key="pick" className="bonus" role="dialog" aria-modal="true" aria-label="Bonus round" variants={list} initial="hidden" animate="show" exit={{ opacity: 0 }}>
-      <motion.p className="bonus-count" variants={rise}>Bonus round {level} of {GIFT_PROMPTS.length}</motion.p>
+      <motion.p className="bonus-count" variants={rise}>Bonus round</motion.p>
       <motion.h2 className="bonus-prompt" variants={pop}>
         {before}
         <span className={`blank ${person ? 'is-filled' : ''}`}>{person ? firstName(person) : ''}</span>
