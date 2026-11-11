@@ -682,7 +682,6 @@ input[aria-invalid='true'] { border-color: var(--stamp-delete); }
 .card, .sheet-body, .menu, .bonus-prompt, .fav-card, .reach-row, .done-cycle, .btn:not(.btn-primary):not(.btn-danger):not(:disabled) { background-image: var(--grain); }
 
 /* Caption boxes: ink box, cream capitals. */
-.progress-top strong,
 .bonus-count {
   padding: 3px 10px 2px;
   font-size: 14px;
@@ -715,3 +714,6 @@ input[aria-invalid='true'] { border-color: var(--stamp-delete); }
 
 /* Welcome screen: the two small buttons sit in the page colour. */
 .welcome .btn-small { background-color: var(--parchment); background-image: none; }
+
+.readme-split { margin-top: 26px !important; padding-top: 18px; border-top: var(--line); font-family: var(--display); font-size: 24px !important; font-weight: 400 !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--ink) !important; }
+.readme .note h3:first-child, .settings h3.first { margin-top: 0; }

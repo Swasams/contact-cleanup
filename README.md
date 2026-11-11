@@ -14,7 +14,7 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Bonus rounds:** every 10 contacts finished in a day opens a bonus round with a nudge ("Send ___ a meme") and three of your favorites to pick from. Ten rounds a day, in a set order (`src/prompts.js`).
 - **Settings** (in the menu): edit the list of how-we-met tags, and switch each contact field on or off. On shows it in details and makes it editable; off hides it.
 - **Deleting a favorite** asks you to confirm first.
-- **Instructions and Author's note** on the welcome screen, and as tabs inside Settings.
+- **Read me** (author's note plus instructions) on the welcome screen and as a tab inside Settings.
 - **On a computer:** right arrow keeps, left arrow deletes, up arrow opens details, Enter opens ways to reach, Backspace or Ctrl+Z undoes.
 - **10 a day:** the first open of the day deals 10 cards. Unfinished cards come first the next day. Skipped days do not stack up.
 - **+10:** the +10 button deals another 10 whenever you want, up to 100 in a day. At 100 the app tells you to stop.
@@ -96,7 +96,8 @@ There is no server. Your contacts travel only between your browser and Google. T
 | `src/Reach.jsx` | Tap: ways to message or call. |
 | `src/Bonus.jsx` | The bonus round: gift animation, prompt, favorites. |
 | `src/prompts.js` | The ten bonus prompts, in order. |
-| `src/Settings.jsx` | Settings popup: tags tab and field switches tab. |
+| `src/Settings.jsx` | Settings popup: Display tab (tags, then field switches) and Read me tab. |
+| `src/ReadMe.jsx` | Author's note followed by the instructions. |
 | `src/contact.js` | The list of fields, the starting tag list, message links, shared helpers. |
 | `src/Modal.jsx` | The popup used everywhere. |
 | `src/Instructions.jsx` | The Instructions popup text. |

@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { FIELD_DEFS, DEFAULT_TAGS } from './contact.js';
-import Instructions from './Instructions.jsx';
-import AuthorsNote from './AuthorsNote.jsx';
+import ReadMe from './ReadMe.jsx';
 
-// Settings popup, four tabs:
-//   Tags          - the "How we met" tags offered on every contact
-//   Fields        - one switch per contact field: on = shown in details and editable, off = hidden
-//   Instructions  - what every control does
-//   Author's note
+// Settings popup, two tabs:
+//   Display - the "How we met" tags offered on every contact, then one switch
+//             per contact field (on = shown in details and editable, off = hidden)
+//   Read me - the author's note and the instructions
 export default function Settings({ tags, setTags, isOn, setField }) {
-  const [tab, setTab] = useState('tags');
+  const [tab, setTab] = useState('display');
   const [text, setText] = useState('');
 
   const add = () => {
@@ -22,18 +20,15 @@ export default function Settings({ tags, setTags, isOn, setField }) {
   return (
     <div className="settings">
       <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'tags'} className={tab === 'tags' ? 'is-on' : ''} onClick={() => setTab('tags')}>How we met tags</button>
-        <button role="tab" aria-selected={tab === 'fields'} className={tab === 'fields' ? 'is-on' : ''} onClick={() => setTab('fields')}>Fields</button>
-        <button role="tab" aria-selected={tab === 'help'} className={tab === 'help' ? 'is-on' : ''} onClick={() => setTab('help')}>Instructions</button>
-        <button role="tab" aria-selected={tab === 'note'} className={tab === 'note' ? 'is-on' : ''} onClick={() => setTab('note')}>Author's note</button>
+        <button role="tab" aria-selected={tab === 'display'} className={tab === 'display' ? 'is-on' : ''} onClick={() => setTab('display')}>Display</button>
+        <button role="tab" aria-selected={tab === 'readme'} className={tab === 'readme' ? 'is-on' : ''} onClick={() => setTab('readme')}>Read me</button>
       </div>
 
-      {tab === 'help' ? (
-        <div role="tabpanel"><Instructions /></div>
-      ) : tab === 'note' ? (
-        <div role="tabpanel"><AuthorsNote /></div>
-      ) : tab === 'tags' ? (
+      {tab === 'readme' ? (
+        <div role="tabpanel"><ReadMe /></div>
+      ) : (
         <div role="tabpanel">
+          <h3 className="first">How we met tags</h3>
           <p className="hint">These are the tags offered on every contact. Tap the x to take one off the list.</p>
           <div className="tagchips">
             {tags.map((t) => (
@@ -52,9 +47,8 @@ export default function Settings({ tags, setTags, isOn, setField }) {
           </form>
           <button className="linkish" onClick={() => setTags(DEFAULT_TAGS)} disabled={isDefault}>Reset to the starting list</button>
           <p className="hint">Removing a tag from this list does not remove it from contacts that already have it.</p>
-        </div>
-      ) : (
-        <div role="tabpanel">
+
+          <h3>Fields</h3>
           <p className="hint">On: the field shows in details and can be edited. Off: it is hidden. Nothing is deleted from your contacts either way.</p>
           <ul className="switches">
             {FIELD_DEFS.map((f) => (

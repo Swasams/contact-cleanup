@@ -86,13 +86,13 @@ export default function Instructions() {
 
       <h3>Settings</h3>
       <ul className="plain">
-        <li><strong>How we met tags:</strong> add or remove the tags offered on every contact.</li>
-        <li><strong>Fields:</strong> a switch for every contact field. On means it shows in details and can be edited. Off hides it. Nothing is deleted either way.</li>
+        <li><strong>Display, How we met tags:</strong> add or remove the tags offered on every contact.</li>
+        <li><strong>Display, Fields:</strong> a switch for every contact field. On means it shows in details and can be edited. Off hides it. Nothing is deleted either way.</li>
       </ul>
 
       <h3>The menu</h3>
       <ul className="plain">
-        <li>The button in the top corner opens Settings (which also holds these instructions and the author's note), reloads the app to pick up the newest version, and lets you sign out.</li>
+        <li>The button in the top corner opens Settings (Display and this Read me) and lets you sign out.</li>
       </ul>
     </>
   );
