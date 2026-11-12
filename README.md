@@ -82,6 +82,12 @@ On an iPhone, open that address in Safari, then Share, **Add to Home Screen**. T
 
 ## Privacy
 
+The published site carries a browser-enforced allowlist (a Content Security Policy, set in `vite.config.js`): the app may only talk to Google's People API, load contact photos from Google's image host, and load Google Fonts. Anything else is refused by the browser.
+
+What is kept in the browser: contact IDs (not names or numbers) for your place in the deck, your tag list, your field switches, and the Google sign-in token for the current tab only.
+
+Tapping Messages, Gmail or WhatsApp on a contact hands that one number or address to that app, as you would expect.
+
 There is no server. Your contacts travel only between your browser and Google. The app stores your place in the cycle (contact IDs and counts) in the browser, and the Google sign-in token for the current session only.
 
 ## Project layout
