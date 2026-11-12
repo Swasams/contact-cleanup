@@ -8,6 +8,7 @@ import Reach from './Reach.jsx';
 import Details from './Details.jsx';
 import Settings from './Settings.jsx';
 import Bonus from './Bonus.jsx';
+import Favorites from './Favorites.jsx';
 import { applyDraft, draftOf, tagsOf, joinTags, hasTag, DEFAULT_TAGS, defaultOn } from './contact.js';
 import { demoContacts, demoStarredDefault } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress, bonusDue, pickFavorites } from './bag.js';
@@ -242,10 +243,7 @@ export default function App() {
   }, [setHistory]);
 
   // Star = favorite. In Google Contacts this is the "Starred" group.
-  const toggleStar = useCallback(async () => {
-    const top = bag && byId.get(bag.hand[0]);
-    if (!top) return;
-    const want = !top.starred;
+  const setStar = useCallback(async (top, want) => {
     const apply = (value) => setContacts((cs) => cs.map((c) => (c.id === top.id ? { ...c, starred: value } : c)));
     apply(want);
     if (modeRef.current === 'demo') {
@@ -261,7 +259,13 @@ export default function App() {
       console.error('Star failed:', err);
       setNotice(`Could not ${want ? 'star' : 'unstar'} "${top.name}". Please try again.`);
     }
-  }, [bag, byId]);
+  }, []);
+
+  // The star button under the deck: the card on top.
+  const toggleStar = useCallback(() => {
+    const top = bag && byId.get(bag.hand[0]);
+    if (top) setStar(top, !top.starred);
+  }, [bag, byId, setStar]);
 
   // Bonus round: after every 10 cards in a day, once the swipe has finished animating.
   // Only a swipe made in this session can set one off, never just opening the app.
@@ -422,6 +426,11 @@ export default function App() {
           <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tagOptions} isOn={isOn} onAddTag={addTag} onClose={closePopup} saveRef={detailsSave} />
         </Modal>
       )}
+      {popup === 'favorites' && (
+        <Modal key="favorites" title="Favorites" onClose={closePopup}>
+          <Favorites contacts={contacts} onToggle={setStar} />
+        </Modal>
+      )}
       {popup === 'settings' && (
         <Modal key="settings" title="Settings" onClose={closePopup}>
           <Settings tags={tagOptions} onAddTag={addTag} onRemoveTag={(tag) => setPopup({ kind: 'removeTag', tag })} google={mode === 'google'} isOn={isOn} setField={setField} />
@@ -545,6 +554,7 @@ export default function App() {
         {menuOpen && (
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
+            <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('favorites'); }}>Favorites</button>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('settings'); }}>Settings</button>
             <button role="menuitem" onClick={exitToTitle}>Exit to title screen</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}

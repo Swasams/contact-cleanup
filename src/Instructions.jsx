@@ -44,7 +44,7 @@ export default function Instructions() {
           <Icon kind="star" />
           <div>
             <strong>Favorite</strong>
-            <p>Mark your favourite friends! So they can pop up when you have a task. In Google Contacts this is your Starred list.</p>
+            <p>Mark your favourite friends! So they can pop up when you have a task. In Google Contacts this is your Starred list. See them all under Favorites in the menu.</p>
           </div>
         </li>
         <li>

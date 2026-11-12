@@ -12,6 +12,7 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Tap a card** to reach the person through Messages, Gmail or WhatsApp.
 - **Swipe a card up** for details: quick tags for how you met, and an Edit button for the contact's fields. With Google connected, the how-we-met tags are your Google Contacts labels: the labels already on the account show up as tags, a new tag becomes a label the first time it is used, and removing a tag in Settings (after a confirmation) deletes the label.
 - **Bonus rounds:** every 10 contacts finished in a day opens a bonus round with a nudge ("Send ___ a meme") and three of your favorites to pick from. Ten rounds a day, in a set order (`src/prompts.js`).
+- **Favorites** (in the menu): the full list of starred contacts, with a star to remove each one and a search box to add more.
 - **Settings** (in the menu): edit the list of how-we-met tags, and switch each contact field on or off. On shows it in details and makes it editable; off hides it.
 - **Deleting a favorite** asks you to confirm first.
 - **Instructions and Author's note** as two buttons on the welcome screen, and merged into a Read me tab inside Settings.
@@ -96,6 +97,7 @@ There is no server. Your contacts travel only between your browser and Google. T
 | `src/Reach.jsx` | Tap: ways to message or call. |
 | `src/Bonus.jsx` | The bonus round: gift animation, prompt, favorites. |
 | `src/prompts.js` | The ten bonus prompts, in order. |
+| `src/Favorites.jsx` | The favorites list popup. |
 | `src/Settings.jsx` | Settings popup: Display tab (tags, then field switches) and Read me tab. |
 | `src/ReadMe.jsx` | Author's note followed by the instructions. |
 | `src/contact.js` | The list of fields, the starting tag list, message links, shared helpers. |

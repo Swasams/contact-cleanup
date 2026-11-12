@@ -595,6 +595,26 @@ input[aria-invalid='true'] { border-color: var(--stamp-delete); }
 .bonus-links { gap: 10px; }
 .bonus-link { margin: 2px auto 0; width: auto; }
 
+/* ---------- favorites list ---------- */
+
+.favorites input[type='search'] { -webkit-appearance: none; appearance: none; }
+.fav-list { list-style: none; margin: 0; padding: 0; }
+.fav-results { margin-top: 8px; padding: 4px 10px; background: var(--paper); border: 2px solid var(--edge); border-radius: 14px; }
+.fav-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 2px dashed var(--rule); }
+.fav-row:first-child { border-top: 0; }
+.fav-row-avatar { flex: none; width: 40px; height: 40px; display: grid; place-items: center; font-family: var(--display); font-size: 16px; border: 2px solid var(--edge); border-radius: 50%; overflow: hidden; }
+.fav-row-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.fav-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.fav-row-text strong { font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-row-text em { font-style: normal; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* someone just un-starred stays in the list, greyed, until the popup closes */
+.fav-list:not(.fav-results) .fav-row.is-off .fav-row-avatar, .fav-list:not(.fav-results) .fav-row.is-off .fav-row-text { opacity: 0.45; }
+.fav-none { margin: 0; padding: 8px 0; border-top: 0; }
+.star-toggle { flex: none; width: 42px; height: 42px; display: grid; place-items: center; padding: 0; color: var(--ink); background: var(--card); border: var(--line); border-radius: 50%; box-shadow: 2px 2px 0 var(--shade); }
+.star-toggle svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linejoin: round; }
+.star-toggle.is-on { color: var(--on-accent); background: var(--yellow); }
+.star-toggle.is-on svg { fill: currentColor; }
+
 /* ---------- done for today ---------- */
 
 .done {
