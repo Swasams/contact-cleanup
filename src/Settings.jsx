@@ -48,16 +48,22 @@ export default function Settings({ tags, onAddTag, onRemoveTag, google, isOn, se
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder="New tag…" aria-label="New tag" maxLength={40} />
             <button className="btn btn-small" type="submit" disabled={!text.trim()}>Add</button>
           </form>
-          <p className="hint">Tapping the x removes a tag from every contact that has it. You will be asked first.</p>
+          <p className="hint">Tapping the x removes a tag from every contact that has it.</p>
 
           <h3>Fields</h3>
-          <p className="hint">On: the field shows in details and can be edited. Off: it is hidden. Nothing is deleted from your contacts either way.</p>
+          <p className="hint">
+            On: the field shows in details and can be edited.
+            <br />
+            Off: it is hidden.
+            <br />
+            Nothing is deleted from your contacts either way.
+          </p>
           <ul className="switches">
             {FIELD_DEFS.map((f) => (
               <li key={f.key}>
                 <span className="switch-label">
                   {f.label}
-                  {f.own && <em>added by this app</em>}
+                  {f.own && <em>{f.key === 'howMet' && google ? 'your Google Contacts labels' : 'added by this app as a custom field'}</em>}
                 </span>
                 <button
                   role="switch"

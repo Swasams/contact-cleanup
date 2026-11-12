@@ -14,7 +14,7 @@ const Icon = ({ kind }) => {
   );
 };
 
-// Everything the controls do, shown in the Instructions popup.
+// What the controls do, shown in the Instructions popup and the Read me.
 export default function Instructions() {
   return (
     <>
@@ -23,28 +23,28 @@ export default function Instructions() {
           <Icon kind="keep" />
           <div>
             <strong>Keep</strong>
-            <p>Swipe the card right, or tap the green button. On a computer, press the right arrow key.</p>
+            <p>Swipe the card right, or tap the green button.</p>
           </div>
         </li>
         <li>
           <Icon kind="delete" />
           <div>
             <strong>Delete</strong>
-            <p>Swipe the card left, or tap the red button. On a computer, press the left arrow key.</p>
+            <p>Swipe the card left, or tap the red button.</p>
           </div>
         </li>
         <li>
           <Icon kind="undo" />
           <div>
             <strong>Undo</strong>
-            <p>Takes back your last 3 swipes, one at a time. The button is greyed out when there is nothing left to undo. On a computer, press Backspace or Ctrl+Z.</p>
+            <p>Resets the most recently swiped card, up to 3 times. The button is greyed out when there is nothing left to undo.</p>
           </div>
         </li>
         <li>
           <Icon kind="star" />
           <div>
             <strong>Favorite</strong>
-            <p>Stars the contact on top. Tap again to remove the star. In Google Contacts this is your Starred list.</p>
+            <p>Mark your favourite friends! So they can pop up when you have a task. In Google Contacts this is your Starred list.</p>
           </div>
         </li>
         <li>
@@ -58,42 +58,8 @@ export default function Instructions() {
 
       <h3>On the card</h3>
       <ul className="plain">
-        <li><strong>Tap the card</strong> to reach the person through Messages, Gmail or WhatsApp. On a computer, press Enter.</li>
-        <li><strong>Swipe the card up</strong> for all their details. On a computer, press the up arrow key.</li>
-        <li>Details shows what is saved, then how and when you met. Tap <strong>Edit</strong> to change any of it, including the tags and the year, then tap <strong>Save</strong>.</li>
-      </ul>
-
-      <h3>Bonus rounds</h3>
-      <ul className="plain">
-        <li>Every 10 contacts you finish in a day opens a bonus round: a small nudge to reach out to someone you starred.</li>
-        <li>Pick one of the three favorites shown, then message or call them. Tap Done, or skip it.</li>
-        <li>There are 10 bonus rounds a day, each with a different nudge. Star more people to see more faces.</li>
-      </ul>
-
-      <h3>How the days work</h3>
-      <ul className="plain">
-        <li>You get {DAILY} contacts a day. Cards you do not finish come first the next day.</li>
-        <li>Nobody shows up twice until you have seen everyone once. Then the deck reshuffles and starts over.</li>
-        <li>At {DAILY_CAP} in one day, the app tells you to stop.</li>
-      </ul>
-
-      <h3>When a delete is final</h3>
-      <ul className="plain">
-        <li>A delete can be undone until 3 newer swipes have happened, or until you leave the app or switch tabs.</li>
-        <li>After that the contact is removed from your Google Contacts.</li>
-        <li>Deleting a favorite always asks you to confirm first.</li>
-      </ul>
-
-      <h3>Settings</h3>
-      <ul className="plain">
-        <li><strong>Display, How we met tags:</strong> add or remove the tags offered on every contact. With Google connected, your tags are your Google Contacts labels.</li>
-        <li>Removing a tag takes it off every contact that has it, after asking you to confirm.</li>
-        <li><strong>Display, Fields:</strong> a switch for every contact field. On means it shows in details and can be edited. Off hides it. Nothing is deleted either way.</li>
-      </ul>
-
-      <h3>The menu</h3>
-      <ul className="plain">
-        <li>The button in the top corner opens Settings (Display and this Read me) and lets you sign out.</li>
+        <li><strong>Tap the card</strong> to reach the person through Messages, Gmail or WhatsApp.</li>
+        <li><strong>Swipe the card up</strong> for all their details. You can edit, change or add more details there.</li>
       </ul>
     </>
   );
