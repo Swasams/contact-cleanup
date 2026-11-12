@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 // A popup sheet. Closes on the X, a tap outside, or the Escape key.
-export default function Modal({ title, onClose, children }) {
+// Pass onConfirm to show a check mark (save) beside the X.
+export default function Modal({ title, onClose, onConfirm, children }) {
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -31,6 +32,11 @@ export default function Modal({ title, onClose, children }) {
       >
         <header className="sheet-head">
           <h2>{title}</h2>
+          {onConfirm && (
+            <button className="sheet-close sheet-save" aria-label="Save" onClick={onConfirm}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            </button>
+          )}
           <button className="sheet-close" aria-label="Close" onClick={onClose} autoFocus>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
           </button>

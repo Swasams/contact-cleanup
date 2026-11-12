@@ -59,7 +59,7 @@ export default function Instructions() {
       <h3>On the card</h3>
       <ul className="plain">
         <li><strong>Tap the card</strong> to reach the person through Messages, Gmail or WhatsApp.</li>
-        <li><strong>Swipe the card up</strong> for all their details. You can edit, change or add more details there.</li>
+        <li><strong>Swipe the card up</strong> for all their details. You can edit, change or add more details there. Tap the check mark to save.</li>
       </ul>
     </>
   );

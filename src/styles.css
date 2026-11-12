@@ -467,12 +467,10 @@ textarea { resize: vertical; }
 .fields .btn { margin-top: 6px; }
 
 .details-head.first { margin-top: 0; }
-/* Save: a small button pinned to the bottom of the details popup while editing. */
-.details-foot { position: sticky; bottom: 0; z-index: 2; display: flex; justify-content: flex-end; margin-top: 16px; padding: 0 4px 6px 0; pointer-events: none; }
-.details-foot .btn { pointer-events: auto; width: auto; margin: 0; padding: 9px 28px; font-size: 16px; border-radius: 12px; box-shadow: 3px 3px 0 var(--shade); }
-.unset { margin: 0 !important; font-size: 15px; color: var(--muted); }
-.met-year { margin: 0 !important; font-size: 17px; font-weight: 500; }
-span.tagchip { cursor: default; }
+/* The check mark (save) beside the X in a popup's header. */
+.sheet-save { margin-left: auto; background: var(--keep); color: var(--on-accent); }
+.sheet-save svg { width: 20px; height: 20px; stroke-linejoin: round; }
+.sheet-head h2 { min-width: 0; overflow-wrap: anywhere; }
 .field-error { font-style: normal; font-size: 13px; font-weight: 600; color: var(--stamp-delete); }
 input[aria-invalid='true'] { border-color: var(--stamp-delete); }
 

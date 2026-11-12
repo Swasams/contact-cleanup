@@ -48,6 +48,7 @@ export default function App() {
   const closePopup = useCallback(() => setPopup(null), []);
   const [bonus, setBonus] = useState(null); // { level, picks: [ids] } while a bonus round is showing
   const lastDone = useRef(null);
+  const detailsSave = useRef(null); // the details popup's save, for the check mark in its header
 
   // Settings, remembered on this device.
   const [tags, setTagsState] = useState(() => (Array.isArray(load('cc.tags')) ? load('cc.tags') : DEFAULT_TAGS));
@@ -407,8 +408,8 @@ export default function App() {
         </Modal>
       )}
       {popup?.kind === 'details' && popupContact && (
-        <Modal key="details" title={popupContact.name} onClose={closePopup}>
-          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tagOptions} isOn={isOn} onAddTag={addTag} onClose={closePopup} />
+        <Modal key="details" title={popupContact.name} onClose={closePopup} onConfirm={() => detailsSave.current?.()}>
+          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tagOptions} isOn={isOn} onAddTag={addTag} onClose={closePopup} saveRef={detailsSave} />
         </Modal>
       )}
       {popup === 'settings' && (
