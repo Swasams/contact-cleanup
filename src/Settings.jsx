@@ -1,21 +1,20 @@
 import { useState } from 'react';
-import { FIELD_DEFS, DEFAULT_TAGS } from './contact.js';
+import { FIELD_DEFS } from './contact.js';
 import ReadMe from './ReadMe.jsx';
 
 // Settings popup, two tabs:
 //   Display - the "How we met" tags offered on every contact, then one switch
 //             per contact field (on = shown in details and editable, off = hidden)
 //   Read me - the author's note and the instructions
-export default function Settings({ tags, setTags, isOn, setField }) {
+export default function Settings({ tags, onAddTag, onRemoveTag, google, isOn, setField }) {
   const [tab, setTab] = useState('display');
   const [text, setText] = useState('');
 
   const add = () => {
     const t = text.trim().replace(/,/g, ' ');
-    if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase())) setTags([...tags, t]);
+    if (t) onAddTag(t);
     setText('');
   };
-  const isDefault = tags.length === DEFAULT_TAGS.length && tags.every((t, i) => t === DEFAULT_TAGS[i]);
 
   return (
     <div className="settings">
@@ -29,12 +28,16 @@ export default function Settings({ tags, setTags, isOn, setField }) {
       ) : (
         <div role="tabpanel">
           <h3 className="first">How we met tags</h3>
-          <p className="hint">These are the tags offered on every contact. A tag you make on a contact is added here too. Tap the x to take one off the list.</p>
+          <p className="hint">
+            {google
+              ? 'These are the labels in your Google Contacts, plus any tags you add. A new tag becomes a Google label the first time you put it on a contact.'
+              : 'These are the tags offered on every contact. A tag you make on a contact is added here too.'}
+          </p>
           <div className="tagchips">
             {tags.map((t) => (
               <span key={t} className="tagchip tagchip-edit">
                 {t}
-                <button aria-label={`Remove ${t}`} onClick={() => setTags(tags.filter((x) => x !== t))}>
+                <button aria-label={`Remove ${t}`} onClick={() => onRemoveTag(t)}>
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
                 </button>
               </span>
@@ -45,8 +48,7 @@ export default function Settings({ tags, setTags, isOn, setField }) {
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder="New tag…" aria-label="New tag" maxLength={40} />
             <button className="btn btn-small" type="submit" disabled={!text.trim()}>Add</button>
           </form>
-          <button className="linkish" onClick={() => setTags(DEFAULT_TAGS)} disabled={isDefault}>Reset to the starting list</button>
-          <p className="hint">Removing a tag from this list does not remove it from contacts that already have it.</p>
+          <p className="hint">Tapping the x removes a tag from every contact that has it. You will be asked first.</p>
 
           <h3>Fields</h3>
           <p className="hint">On: the field shows in details and can be edited. Off: it is hidden. Nothing is deleted from your contacts either way.</p>

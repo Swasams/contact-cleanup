@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FIELD_DEFS, draftOf, sameDraft, tagsOf, parseDate, fmtDate } from './contact.js';
+import { FIELD_DEFS, draftOf, sameDraft, tagsOf, joinTags, parseDate, fmtDate } from './contact.js';
 
 const THIS_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: THIS_YEAR - 1979 }, (_, i) => String(THIS_YEAR - i));
@@ -7,7 +7,7 @@ const INPUT = { text: 'text', tel: 'tel', email: 'email', date: 'text' };
 
 // Swipe a card up: quick "how we met" tags, everything saved on the contact,
 // and an Edit button. Only fields switched on in Settings appear here.
-export default function Details({ contact, startEditing = false, onSave, onAddTag, tagOptions, isOn }) {
+export default function Details({ contact, startEditing = false, onSave, onAddTag, onClose, tagOptions, isOn }) {
   const [draft, setDraft] = useState(() => draftOf(contact));
   const [editing, setEditing] = useState(startEditing);
   const [custom, setCustom] = useState('');
@@ -35,21 +35,22 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
 
   const set = (key, value) => setDraft((d) => ({ ...d, [key]: value }));
   const tags = tagsOf(draft.howMet);
-  const toggleTag = (t) => set('howMet', (tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]).join(', '));
+  const toggleTag = (t) => set('howMet', joinTags(tags.includes(t) ? tags.filter((x) => x !== t) : [...tags, t]));
   const addCustom = () => {
     const t = custom.trim().replace(/,/g, ' ');
-    if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase())) set('howMet', [...tags, t].join(', '));
+    if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase())) set('howMet', joinTags([...tags, t]));
     if (t) onAddTag?.(t); // a tag made here becomes an option for everyone from now on
     setCustom('');
   };
 
+  // The Save button: save everything (tags, year, and the form if it is open), then close.
   const save = (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     const bad = badDates(draft);
     setErrors(Object.fromEntries(bad.map((k) => [k, true])));
     if (bad.length) return;
     commit(draft);
-    setEditing(false);
+    onClose();
   };
 
   // The plain fields (everything except tags and year) that are switched on.
@@ -68,7 +69,7 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
         <section>
           <h3 className="first">How we met</h3>
           <div className="tagchips">
-            {[...tagOptions, ...tags.filter((t) => !tagOptions.includes(t))].map((t) => (
+            {[...tagOptions, ...tags.filter((t) => !tagOptions.some((o) => o.toLowerCase() === t.toLowerCase()))].map((t) => (
               <button key={t} className={`tagchip ${tags.includes(t) ? 'is-on' : ''}`} aria-pressed={tags.includes(t)} onClick={() => toggleTag(t)}>
                 {t}
               </button>
@@ -120,7 +121,7 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
                 {errors[f.key] && <em className="field-error">Use MM/DD or MM/DD/YYYY.</em>}
               </label>
             ))}
-            <button className="btn btn-primary" type="submit">Save</button>
+            <button type="submit" hidden />
           </form>
         ) : (
           <dl className="rows">
@@ -138,6 +139,10 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
           </dl>
         )}
       </section>
+
+      <div className="details-foot">
+        <button className="btn btn-primary" onClick={save}>Save</button>
+      </div>
     </div>
   );
 }

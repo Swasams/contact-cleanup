@@ -60,7 +60,7 @@ export default function Instructions() {
       <ul className="plain">
         <li><strong>Tap the card</strong> to reach the person through Messages, Gmail or WhatsApp. On a computer, press Enter.</li>
         <li><strong>Swipe the card up</strong> for all their details. On a computer, press the up arrow key.</li>
-        <li>In details, tap the tags to record how and when you met. Tap <strong>Edit</strong> to change their name, number and the rest.</li>
+        <li>In details, tap the tags to record how and when you met. Tap <strong>Edit</strong> to change their name, number and the rest. Tap <strong>Save</strong> when you are done.</li>
       </ul>
 
       <h3>Bonus rounds</h3>
@@ -86,7 +86,8 @@ export default function Instructions() {
 
       <h3>Settings</h3>
       <ul className="plain">
-        <li><strong>Display, How we met tags:</strong> add or remove the tags offered on every contact.</li>
+        <li><strong>Display, How we met tags:</strong> add or remove the tags offered on every contact. With Google connected, your tags are your Google Contacts labels.</li>
+        <li>Removing a tag takes it off every contact that has it, after asking you to confirm.</li>
         <li><strong>Display, Fields:</strong> a switch for every contact field. On means it shows in details and can be edited. Off hides it. Nothing is deleted either way.</li>
       </ul>
 

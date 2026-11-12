@@ -1,6 +1,8 @@
 // Shared helpers for the parts of a contact the app can show and edit.
 
 // The app's own extra fields are stored in Google as "custom fields" under these names.
+// howMet is the old home of the tags. With Google connected, tags are now the
+// account's labels, and any tags still saved the old way are moved across.
 export const CUSTOM_KEYS = {
   howMet: 'How we met',
   metYear: 'Met in',
@@ -85,7 +87,18 @@ export function applyDraft(c, changes) {
   return withDisplayName(n);
 }
 
-export const tagsOf = (howMet) => (howMet || '').split(',').map((t) => t.trim()).filter(Boolean);
+// A contact's tags travel through the app as one string. Tags are separated by
+// an invisible character, because a Google label's own name may contain a comma.
+// (Older saved values were comma-separated, and are still read correctly.)
+const SEP = '\u001f';
+export const tagsOf = (howMet) => (howMet || '').split((howMet || '').includes(SEP) ? SEP : ',').map((t) => t.trim()).filter(Boolean);
+export function joinTags(list) {
+  const out = [];
+  for (const t of list) if (t && !out.some((x) => x.toLowerCase() === t.toLowerCase())) out.push(t);
+  const s = out.join(SEP);
+  return s.includes(',') && !s.includes(SEP) ? s + SEP : s;
+}
+export const hasTag = (c, tag) => tagsOf(c.howMet).some((t) => t.toLowerCase() === tag.toLowerCase());
 
 // Build one way to reach a contact, or null if the contact lacks what it needs.
 // On a phone the Gmail row opens the phone's mail app (Gmail, if Gmail is set

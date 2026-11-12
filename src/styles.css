@@ -108,6 +108,7 @@ a { color: inherit; font-weight: 600; text-decoration-thickness: 2px; text-under
 .btn-primary { background: var(--yellow); color: var(--on-accent); }
 .btn-danger { background: var(--delete); color: var(--on-accent); }
 .confirm-name { font-family: var(--display); font-size: 26px; line-height: 1.1; margin: 4px 0 18px !important; overflow-wrap: anywhere; }
+.sheet-body .btn-row { margin-top: 16px; }
 .btn:disabled { background: var(--off); color: var(--off-ink); border-color: var(--off-ink); box-shadow: none; cursor: not-allowed; }
 
 .notice {
@@ -466,6 +467,9 @@ textarea { resize: vertical; }
 .fields .btn { margin-top: 6px; }
 
 .details-head.first { margin-top: 0; }
+/* Save stays in view at the bottom of the details popup while the rest scrolls. */
+.details-foot { position: sticky; bottom: -22px; z-index: 2; margin: 18px -20px -22px; padding: 12px 20px 16px; background-color: var(--card); background-image: var(--grain); border-top: var(--line); }
+.details-foot .btn { margin: 0; }
 .field-error { font-style: normal; font-size: 13px; font-weight: 600; color: var(--stamp-delete); }
 input[aria-invalid='true'] { border-color: var(--stamp-delete); }
 

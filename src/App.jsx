@@ -8,10 +8,10 @@ import Reach from './Reach.jsx';
 import Details from './Details.jsx';
 import Settings from './Settings.jsx';
 import Bonus from './Bonus.jsx';
-import { applyDraft, DEFAULT_TAGS, defaultOn } from './contact.js';
+import { applyDraft, draftOf, tagsOf, joinTags, hasTag, DEFAULT_TAGS, defaultOn } from './contact.js';
 import { demoContacts, demoStarredDefault } from './demo.js';
 import { DAILY, DAILY_CAP, newState, reconcile, dealForToday, dealMore, swipe, undoSwipe, progress, bonusDue, pickFavorites } from './bag.js';
-import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, fetchContact, redirectUri } from './google.js';
+import { CLIENT_ID, AuthError, consumeRedirect, isSignedIn, startSignIn, signOut, fetchAllContacts, deleteContact, setStarred, updateContact, fetchContact, listLabels, deleteLabel, migrateLegacyTags, redirectUri } from './google.js';
 
 const UNDO_DEPTH = 3; // how many recent swipes can be undone
 
@@ -52,7 +52,7 @@ export default function App() {
   // Settings, remembered on this device.
   const [tags, setTagsState] = useState(() => (Array.isArray(load('cc.tags')) ? load('cc.tags') : DEFAULT_TAGS));
   const [fieldPrefs, setFieldPrefs] = useState(() => load('cc.fields') || {});
-  const setTags = useCallback((next) => { setTagsState(next); save('cc.tags', next); }, []);
+  const [labels, setLabels] = useState([]); // with Google connected: the account's own labels
   const addTag = useCallback((t) => {
     setTagsState((prev) => {
       if (prev.some((x) => x.toLowerCase() === t.toLowerCase())) return prev;
@@ -157,7 +157,13 @@ export default function App() {
         list.filter((c) => waiting.has(c.id)).forEach((c) => commitDelete(c));
         list = list.filter((c) => !waiting.has(c.id));
       }
+      setLabels(listLabels());
       begin('google', list);
+      // Tags saved the old way are moved to labels in the background.
+      migrateLegacyTags(list, (fresh) => {
+        setContacts((cs) => cs.map((c) => (c.id === fresh.id ? { ...fresh, starred: c.starred } : c)));
+        setLabels(listLabels());
+      });
     } catch (err) {
       setNotice(err.message || 'Could not load your contacts.');
       setScreen('welcome');
@@ -274,6 +280,43 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [bag?.done]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // The tags offered on every contact. With Google connected these are the
+  // account's labels, followed by any tags added here that are not labels yet.
+  const tagOptions = useMemo(
+    () => (mode === 'google' ? [...labels, ...tags.filter((t) => !labels.some((l) => l.toLowerCase() === t.toLowerCase()))] : tags),
+    [mode, labels, tags]
+  );
+
+  // Remove a tag everywhere: from every contact that has it, and from the list.
+  // With Google connected this deletes the label from the account.
+  const removeTag = useCallback(async (tag) => {
+    if (modeRef.current === 'google') {
+      try {
+        await deleteLabel(tag);
+      } catch (err) {
+        console.error('Remove tag failed:', err);
+        setNotice(`Could not remove "${tag}". Please try again.`);
+        return;
+      }
+      setLabels(listLabels());
+    }
+    const strip = (c) => ({ ...c, howMet: joinTags(tagsOf(c.howMet).filter((t) => t.toLowerCase() !== tag.toLowerCase())) });
+    setContacts((cs) => {
+      const next = cs.map((c) => (hasTag(c, tag) ? strip(c) : c));
+      if (modeRef.current === 'demo') {
+        const edits = load('cc.demo.edits') || {};
+        next.forEach((c, i) => { if (c !== cs[i]) edits[c.id] = draftOf(c); });
+        save('cc.demo.edits', edits);
+      }
+      return next;
+    });
+    setTagsState((prev) => {
+      const next = prev.filter((t) => t.toLowerCase() !== tag.toLowerCase());
+      save('cc.tags', next);
+      return next;
+    });
+  }, []);
+
   // Save edits and tags from the details screen.
   const saveContact = useCallback(async (contact, draft) => {
     const swap = (next) => setContacts((cs) => cs.map((c) => (c.id === contact.id ? { ...next, starred: c.starred } : c)));
@@ -284,6 +327,7 @@ export default function App() {
     }
     try {
       swap(await updateContact(contact, draft));
+      setLabels(listLabels()); // a brand-new tag is a label now
     } catch (err) {
       // Show what Google really has now, not a guess.
       try {
@@ -332,6 +376,7 @@ export default function App() {
     setMode(null);
     setBag(null);
     setContacts([]);
+    setLabels([]);
     setScreen('welcome');
   };
 
@@ -363,14 +408,33 @@ export default function App() {
       )}
       {popup?.kind === 'details' && popupContact && (
         <Modal key="details" title={popupContact.name} onClose={closePopup}>
-          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tags} isOn={isOn} onAddTag={addTag} />
+          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tagOptions} isOn={isOn} onAddTag={addTag} onClose={closePopup} />
         </Modal>
       )}
       {popup === 'settings' && (
         <Modal key="settings" title="Settings" onClose={closePopup}>
-          <Settings tags={tags} setTags={setTags} isOn={isOn} setField={setField} />
+          <Settings tags={tagOptions} onAddTag={addTag} onRemoveTag={(tag) => setPopup({ kind: 'removeTag', tag })} google={mode === 'google'} isOn={isOn} setField={setField} />
         </Modal>
       )}
+      {popup?.kind === 'removeTag' && (() => {
+        const count = contacts.filter((c) => hasTag(c, popup.tag)).length;
+        const isLabel = mode === 'google' && labels.some((l) => l.toLowerCase() === popup.tag.toLowerCase());
+        const back = () => setPopup('settings');
+        return (
+          <Modal key="removeTag" title="Remove this tag?" onClose={back}>
+            <p className="confirm-name">{popup.tag}</p>
+            <p>
+              {count === 0 ? 'No contacts have this tag.' : `You'll remove this from ${count} ${count === 1 ? 'contact' : 'contacts'}.`}
+              {count > 0 && ' The contacts themselves stay.'}
+            </p>
+            {isLabel && <p>This also deletes the label from your Google Contacts.</p>}
+            <div className="btn-row">
+              <button className="btn btn-small" onClick={back}>Cancel</button>
+              <button className="btn btn-small btn-danger" onClick={async () => { await removeTag(popup.tag); back(); }}>Remove</button>
+            </div>
+          </Modal>
+        );
+      })()}
       {popup === 'help' && (
         <Modal key="help" title="Instructions" onClose={closePopup}>
           <Instructions />
