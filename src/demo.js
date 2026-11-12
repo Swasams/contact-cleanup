@@ -30,12 +30,11 @@ const raw = [
 
 // A few demo people come with extra details so the details and message screens have something to show.
 const extras = {
-  0: { howMet: 'School', metYear: '2016', starred: true },
-  6: { howMet: 'Work', metYear: '2021', title: 'Producer' },
+  0: { howMet: 'School', starred: true },
+  6: { howMet: 'Work', title: 'Producer' },
   10: { starred: true },
   15: { howMet: 'Family' },
   18: { address: '12 Lantern Row, Apt 3\nSpringfield', event: { year: 2022, month: 6, day: 4 }, starred: true },
-  22: { metYear: '2023' },
   23: { starred: true },
 };
 

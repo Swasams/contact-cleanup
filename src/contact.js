@@ -5,7 +5,6 @@
 // account's labels, and any tags still saved the old way are moved across.
 export const CUSTOM_KEYS = {
   howMet: 'How we met',
-  metYear: 'Met in',
 };
 
 export const DEFAULT_TAGS = ['School', 'Work', 'Family'];
@@ -25,7 +24,6 @@ export const FIELD_DEFS = [
   { key: 'event', label: 'Significant date', type: 'date' },
   { key: 'notes', label: 'Notes', type: 'textarea' },
   { key: 'howMet', label: 'How we met', type: 'tags', own: true },
-  { key: 'metYear', label: 'When we met', type: 'year', own: true },
 ];
 
 // Every field starts switched on.
@@ -134,5 +132,5 @@ export const reachOptions = (c) => linksFor(['sms', 'email', 'whatsapp'], c);
 // A blank contact with every field present, so the rest of the app never has to check.
 export const emptyContact = () => ({
   id: '', realName: '', phones: [], emails: [], org: '', title: '', address: '', birthday: null, event: null,
-  notes: '', howMet: '', metYear: '', photo: null, starred: false,
+  notes: '', howMet: '', photo: null, starred: false,
 });

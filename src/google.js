@@ -165,7 +165,6 @@ export function normalize(p) {
     starred: (p.memberships || []).some((m) => m.contactGroupMembership?.contactGroupResourceName === STARRED),
     notes: p.biographies?.[0]?.value || '',
     howMet: joinTags([...labelsOn(p), ...legacyTagsOf(p)]), // labels, plus any tags still saved the old way
-    metYear: all[CUSTOM_KEYS.metYear] || '',
     raw: p, // the original record, needed to save edits without losing anything
   });
 }
@@ -320,15 +319,11 @@ async function saveOnce(contact, draft) {
     mask.push('biographies');
     body.biographies = val('notes') ? [{ value: draft.notes, contentType: 'TEXT_PLAIN' }] : [];
   }
-  // The year lives in a custom field. Other custom fields are left untouched.
   // An old-style tags field is dropped once its tags are labels (just above).
-  const hasOldTags = (raw.userDefined || []).some((u) => u.key === CUSTOM_KEYS.howMet);
-  if (changed('metYear') || (changed('howMet') && hasOldTags)) {
+  // Every other custom field on the contact is left untouched.
+  if (changed('howMet') && (raw.userDefined || []).some((u) => u.key === CUSTOM_KEYS.howMet)) {
     mask.push('userDefined');
-    const kept = (raw.userDefined || [])
-      .filter((u) => u.key !== CUSTOM_KEYS.metYear && (u.key !== CUSTOM_KEYS.howMet || !changed('howMet')))
-      .map(({ key, value }) => ({ key, value }));
-    body.userDefined = [...kept, ...(val('metYear') ? [{ key: CUSTOM_KEYS.metYear, value: val('metYear') }] : [])];
+    body.userDefined = (raw.userDefined || []).filter((u) => u.key !== CUSTOM_KEYS.howMet).map(({ key, value }) => ({ key, value }));
   }
   if (!mask.length) return touchedLabels ? normalize(raw) : contact;
 

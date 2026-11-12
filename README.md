@@ -10,7 +10,7 @@ It is a small web app that runs entirely in your browser and can be added to a p
 - **Undo:** the undo button takes back your last 3 swipes, keeps or deletes. A delete is only sent to Google once it can no longer be undone: when 3 newer swipes have happened, or when you leave the app.
 - **Star:** the star button marks the contact as a favorite. In Google Contacts this is the Starred group.
 - **Tap a card** to reach the person through Messages, Gmail or WhatsApp.
-- **Swipe a card up** for details: quick tags for how and when you met, and an Edit button for the contact's fields. With Google connected, the how-we-met tags are your Google Contacts labels: the labels already on the account show up as tags, a new tag becomes a label the first time it is used, and removing a tag in Settings (after a confirmation) deletes the label. The year is saved as a custom field named "Met in".
+- **Swipe a card up** for details: quick tags for how you met, and an Edit button for the contact's fields. With Google connected, the how-we-met tags are your Google Contacts labels: the labels already on the account show up as tags, a new tag becomes a label the first time it is used, and removing a tag in Settings (after a confirmation) deletes the label.
 - **Bonus rounds:** every 10 contacts finished in a day opens a bonus round with a nudge ("Send ___ a meme") and three of your favorites to pick from. Ten rounds a day, in a set order (`src/prompts.js`).
 - **Settings** (in the menu): edit the list of how-we-met tags, and switch each contact field on or off. On shows it in details and makes it editable; off hides it.
 - **Deleting a favorite** asks you to confirm first.
@@ -92,7 +92,7 @@ There is no server. Your contacts travel only between your browser and Google. T
 | `src/google.js` | Google sign-in and the People API calls. |
 | `src/App.jsx` | Screens and swipe handling. |
 | `src/Card.jsx` | The contact card and its drag behaviour. |
-| `src/Details.jsx` | Swipe-up details: tags, year, edit form. |
+| `src/Details.jsx` | Swipe-up details: fields, tags, edit form. |
 | `src/Reach.jsx` | Tap: ways to message or call. |
 | `src/Bonus.jsx` | The bonus round: gift animation, prompt, favorites. |
 | `src/prompts.js` | The ten bonus prompts, in order. |

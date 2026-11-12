@@ -56,7 +56,7 @@ export default function Card({ contact, isTop, exitDir, onSwipe, onTap, onDetail
 
   // Rows on the card follow the field switches in Settings.
   const work = [isOn('title') && contact.title, isOn('org') && contact.org].filter((v) => v && v !== contact.name).join(', ');
-  const met = [isOn('howMet') && tagsOf(contact.howMet).join(', '), isOn('metYear') && contact.metYear].filter(Boolean).join(' · ');
+  const met = isOn('howMet') ? tagsOf(contact.howMet).join(', ') : '';
   const rows = [
     ['Phone', isOn('phone') && contact.phones[0], contact.phones.length - 1],
     ['Email', isOn('email') && contact.emails[0], contact.emails.length - 1],

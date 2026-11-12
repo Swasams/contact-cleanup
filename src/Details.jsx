@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { FIELD_DEFS, draftOf, sameDraft, tagsOf, joinTags, parseDate, fmtDate } from './contact.js';
 
-const THIS_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: THIS_YEAR - 1979 }, (_, i) => String(THIS_YEAR - i));
 const INPUT = { text: 'text', tel: 'tel', email: 'email', date: 'text' };
 
-// Swipe a card up: everything saved on the contact, then how and when you met.
-// Tags and the year can be set straight away; Edit opens the contact's fields.
+// Swipe a card up: everything saved on the contact, then how you met.
+// Tags can be set straight away; Edit opens the contact's fields.
 // The check mark in the popup's header saves, the X closes without saving.
 // Only fields switched on in Settings appear.
 export default function Details({ contact, startEditing = false, onSave, onAddTag, onClose, saveRef, tagOptions, isOn }) {
@@ -40,7 +38,7 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
     setAdding(false);
   };
 
-  // The check mark in the header: save everything (fields, tags, year) and close.
+  // The check mark in the header: save everything (fields and tags) and close.
   const save = (e) => {
     e?.preventDefault?.();
     const bad = badDates(draft);
@@ -61,7 +59,7 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
   ];
   const shown = (f) => (f.type === 'date' ? fmtDate(parseDate(draft[f.key]) || null) || draft[f.key] : draft[f.key]);
   const nothing = !plain.some((f) => draft[f.key]) && !extras.length;
-  const anyEditable = plain.length > 0 || isOn('howMet') || isOn('metYear');
+  const anyEditable = plain.length > 0 || isOn('howMet');
 
   return (
     <div className="details">
@@ -140,16 +138,6 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
         </section>
       )}
 
-      {isOn('metYear') && (
-        <section>
-          <h3>When we met</h3>
-          <select value={draft.metYear} onChange={(e) => set('metYear', e.target.value)} aria-label="Year we met">
-            <option value="">Not sure</option>
-            {draft.metYear && !YEARS.includes(draft.metYear) && <option value={draft.metYear}>{draft.metYear}</option>}
-            {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </section>
-      )}
     </div>
   );
 }
