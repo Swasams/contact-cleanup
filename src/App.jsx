@@ -381,6 +381,16 @@ export default function App() {
     setScreen('welcome');
   };
 
+  // Back to the title screen. With Google connected you stay signed in, and
+  // the title screen offers a way straight back to your contacts.
+  const exitToTitle = () => {
+    if (mode === 'demo') return leave();
+    flushDeletes();
+    setMenuOpen(false);
+    setPopup(null);
+    setScreen('welcome');
+  };
+
   const resetDemo = () => {
     ['cc.demo.deleted', 'cc.demo.starred', 'cc.demo.edits', 'cc.bag.demo', 'cc.pending.demo'].forEach((k) => localStorage.removeItem(k));
     setMenuOpen(false);
@@ -463,13 +473,19 @@ export default function App() {
           </div>
           <motion.h1 className="title" variants={rise}>Who Dis?</motion.h1>
           <motion.p className="lede" variants={rise}>
-            Swipe through your contacts, {DAILY} a day. Left to delete, right to keep.
+            Swipe through your contacts. Left to delete, right to keep.
           </motion.p>
           {notice && <p className="notice" role="alert">{notice}</p>}
-          <motion.button className="btn btn-primary" variants={rise} onClick={startSignIn} disabled={!CLIENT_ID}>
-            Connect Google Contacts
-          </motion.button>
-          {!CLIENT_ID && (
+          {mode === 'google' && bag ? (
+            <motion.button className="btn btn-primary" variants={rise} onClick={() => setScreen('deck')}>
+              Back to your contacts
+            </motion.button>
+          ) : (
+            <motion.button className="btn btn-primary" variants={rise} onClick={isSignedIn() ? startGoogle : startSignIn} disabled={!CLIENT_ID && !isSignedIn()}>
+              Connect Google Contacts
+            </motion.button>
+          )}
+          {!CLIENT_ID && !isSignedIn() && (
             <motion.p className="setup-note" variants={rise}>
               Google sign-in is not set up in this copy yet. Add a client ID (README, step 2) with this redirect address:
               <code>{redirectUri()}</code>
@@ -530,8 +546,9 @@ export default function App() {
           <div className="menu" role="menu">
             <p className="menu-label">{mode === 'demo' ? 'Demo mode (made-up contacts)' : 'Google Contacts'}</p>
             <button role="menuitem" onClick={() => { setMenuOpen(false); setPopup('settings'); }}>Settings</button>
+            <button role="menuitem" onClick={exitToTitle}>Exit to title screen</button>
             {mode === 'demo' && <button role="menuitem" onClick={resetDemo}>Reset demo</button>}
-            <button role="menuitem" onClick={leave}>{mode === 'demo' ? 'Exit demo' : 'Sign out'}</button>
+            {mode === 'google' && <button role="menuitem" onClick={leave}>Sign out</button>}
           </div>
         )}
       </header>
