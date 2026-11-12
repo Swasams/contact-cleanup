@@ -439,6 +439,7 @@ a { color: inherit; font-weight: 600; text-decoration-thickness: 2px; text-under
   border: 2px solid var(--edge);
   border-radius: 999px;
 }
+.chip-add { padding: 7px 13px; font-size: 15px; font-weight: 600; color: var(--muted); background: none; border: 2px dashed var(--edge); border-radius: 999px; }
 .tagchip.is-on { color: var(--on-accent); background: var(--yellow); font-weight: 600; box-shadow: 2px 2px 0 var(--shade); }
 
 .inline { display: flex; gap: 8px; margin-top: 10px; }

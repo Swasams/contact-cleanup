@@ -13,6 +13,7 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
   const [draft, setDraft] = useState(() => draftOf(contact));
   const [editing, setEditing] = useState(startEditing);
   const [custom, setCustom] = useState('');
+  const [adding, setAdding] = useState(false); // the box for typing a new tag, opened by the Add chip
   const [errors, setErrors] = useState({});
   const saved = useRef(draftOf(contact));
 
@@ -36,6 +37,7 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
     if (t && !tags.some((x) => x.toLowerCase() === t.toLowerCase())) set('howMet', joinTags([...tags, t]));
     if (t) onAddTag?.(t); // a tag made here becomes an option for everyone from now on
     setCustom('');
+    setAdding(false);
   };
 
   // The check mark in the header: save everything (fields, tags, year) and close.
@@ -119,11 +121,22 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
                 {t}
               </button>
             ))}
+            {!adding && <button className="chip-add" onClick={() => setAdding(true)}>+ Add</button>}
           </div>
-          <form className="inline" onSubmit={(e) => { e.preventDefault(); addCustom(); }}>
-            <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Something else…" aria-label="Add your own tag" maxLength={40} />
-            <button className="btn btn-small" type="submit" disabled={!custom.trim()}>Add</button>
-          </form>
+          {adding && (
+            <form className="inline" onSubmit={(e) => { e.preventDefault(); addCustom(); }}>
+              <input
+                autoFocus
+                value={custom}
+                onChange={(e) => setCustom(e.target.value)}
+                onBlur={() => { if (!custom.trim()) setAdding(false); }}
+                placeholder="New tag…"
+                aria-label="Add your own tag"
+                maxLength={40}
+              />
+              <button className="btn btn-small" type="submit" disabled={!custom.trim()}>Add</button>
+            </form>
+          )}
         </section>
       )}
 
