@@ -5,8 +5,9 @@ const THIS_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: THIS_YEAR - 1979 }, (_, i) => String(THIS_YEAR - i));
 const INPUT = { text: 'text', tel: 'tel', email: 'email', date: 'text' };
 
-// Swipe a card up: quick "how we met" tags, everything saved on the contact,
-// and an Edit button. Only fields switched on in Settings appear here.
+// Swipe a card up: everything saved on the contact, then how and when you met.
+// It opens read-only. Tap Edit to change anything (fields, tags, year); the
+// Save button only exists while editing. Only fields switched on in Settings appear.
 export default function Details({ contact, startEditing = false, onSave, onAddTag, onClose, tagOptions, isOn }) {
   const [draft, setDraft] = useState(() => draftOf(contact));
   const [editing, setEditing] = useState(startEditing);
@@ -43,14 +44,14 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
     setCustom('');
   };
 
-  // The Save button: save everything (tags, year, and the form if it is open), then close.
+  // The Save button: save everything (fields, tags, year) and go back to the read-only view.
   const save = (e) => {
     e?.preventDefault();
     const bad = badDates(draft);
     setErrors(Object.fromEntries(bad.map((k) => [k, true])));
     if (bad.length) return;
     commit(draft);
-    onClose();
+    setEditing(false);
   };
 
   // The plain fields (everything except tags and year) that are switched on.
@@ -61,40 +62,12 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
   ];
   const shown = (f) => (f.type === 'date' ? fmtDate(parseDate(draft[f.key]) || null) || draft[f.key] : draft[f.key]);
   const nothing = !plain.some((f) => draft[f.key]) && !extras.length;
-  const anyEditable = plain.length > 0;
+  const anyEditable = plain.length > 0 || isOn('howMet') || isOn('metYear');
 
   return (
     <div className="details">
-      {isOn('howMet') && (
-        <section>
-          <h3 className="first">How we met</h3>
-          <div className="tagchips">
-            {[...tagOptions, ...tags.filter((t) => !tagOptions.some((o) => o.toLowerCase() === t.toLowerCase()))].map((t) => (
-              <button key={t} className={`tagchip ${tags.includes(t) ? 'is-on' : ''}`} aria-pressed={tags.includes(t)} onClick={() => toggleTag(t)}>
-                {t}
-              </button>
-            ))}
-          </div>
-          <form className="inline" onSubmit={(e) => { e.preventDefault(); addCustom(); }}>
-            <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Something else…" aria-label="Add your own tag" maxLength={40} />
-            <button className="btn btn-small" type="submit" disabled={!custom.trim()}>Add</button>
-          </form>
-        </section>
-      )}
-
-      {isOn('metYear') && (
-        <section>
-          <h3 className={isOn('howMet') ? '' : 'first'}>When we met</h3>
-          <select value={draft.metYear} onChange={(e) => set('metYear', e.target.value)} aria-label="Year we met">
-            <option value="">Not sure</option>
-            {draft.metYear && !YEARS.includes(draft.metYear) && <option value={draft.metYear}>{draft.metYear}</option>}
-            {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </section>
-      )}
-
       <section>
-        <div className={`details-head ${isOn('howMet') || isOn('metYear') ? '' : 'first'}`}>
+        <div className="details-head first">
           <h3>Contact details</h3>
           {!editing && anyEditable && <button className="btn btn-small edit-btn" onClick={() => setEditing(true)}>Edit</button>}
         </div>
@@ -140,9 +113,55 @@ export default function Details({ contact, startEditing = false, onSave, onAddTa
         )}
       </section>
 
-      <div className="details-foot">
-        <button className="btn btn-primary" onClick={save}>Save</button>
-      </div>
+      {isOn('howMet') && (
+        <section>
+          <h3>How we met</h3>
+          {editing ? (
+            <>
+              <div className="tagchips">
+                {[...tagOptions, ...tags.filter((t) => !tagOptions.some((o) => o.toLowerCase() === t.toLowerCase()))].map((t) => (
+                  <button key={t} className={`tagchip ${tags.includes(t) ? 'is-on' : ''}`} aria-pressed={tags.includes(t)} onClick={() => toggleTag(t)}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <form className="inline" onSubmit={(e) => { e.preventDefault(); addCustom(); }}>
+                <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Something else…" aria-label="Add your own tag" maxLength={40} />
+                <button className="btn btn-small" type="submit" disabled={!custom.trim()}>Add</button>
+              </form>
+            </>
+          ) : tags.length ? (
+            <div className="tagchips">
+              {tags.map((t) => <span key={t} className="tagchip is-on">{t}</span>)}
+            </div>
+          ) : (
+            <p className="unset">Not added yet</p>
+          )}
+        </section>
+      )}
+
+      {isOn('metYear') && (
+        <section>
+          <h3>When we met</h3>
+          {editing ? (
+            <select value={draft.metYear} onChange={(e) => set('metYear', e.target.value)} aria-label="Year we met">
+              <option value="">Not sure</option>
+              {draft.metYear && !YEARS.includes(draft.metYear) && <option value={draft.metYear}>{draft.metYear}</option>}
+              {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+            </select>
+          ) : draft.metYear ? (
+            <p className="met-year">{draft.metYear}</p>
+          ) : (
+            <p className="unset">Not added yet</p>
+          )}
+        </section>
+      )}
+
+      {editing && (
+        <div className="details-foot">
+          <button className="btn btn-primary" onClick={save}>Save</button>
+        </div>
+      )}
     </div>
   );
 }

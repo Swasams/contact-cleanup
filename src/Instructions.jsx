@@ -60,7 +60,7 @@ export default function Instructions() {
       <ul className="plain">
         <li><strong>Tap the card</strong> to reach the person through Messages, Gmail or WhatsApp. On a computer, press Enter.</li>
         <li><strong>Swipe the card up</strong> for all their details. On a computer, press the up arrow key.</li>
-        <li>In details, tap the tags to record how and when you met. Tap <strong>Edit</strong> to change their name, number and the rest. Tap <strong>Save</strong> when you are done.</li>
+        <li>Details shows what is saved, then how and when you met. Tap <strong>Edit</strong> to change any of it, including the tags and the year, then tap <strong>Save</strong>.</li>
       </ul>
 
       <h3>Bonus rounds</h3>
