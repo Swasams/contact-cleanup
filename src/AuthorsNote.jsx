@@ -6,7 +6,7 @@ export default function AuthorsNote() {
   return (
     <div className="note">
       <p>
-        Hi, I'm Swathi. I'm crazy and I don't like having contacts of people from like one vacation I took 7 years ago,
+        Hi, I'm Swathi Sambasivam. I'm crazy and I don't like having contacts of people from like one vacation I took 7 years ago,
         so I made a lil app for cleaning out your contacts. Swipe left to delete, swipe right to keep.
       </p>
       <p>
