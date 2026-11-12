@@ -24,7 +24,7 @@ It is a small web app that runs entirely in your browser and can be added to a p
 
 Not built yet: the page on swathisambasivam.com.
 
-Not yet tested against a real Google account: sign-in, deleting, starring, and saving edits. All of it is tested in demo mode.
+Checked on a real Google account: sign-in, loading contacts, starring, saving tags. Not yet checked on a real account: that deleted contacts land in Google's Trash, label deletion, and the favorites list.
 
 ## 1. Run it on your computer
 
@@ -88,7 +88,7 @@ What is kept in the browser: contact IDs (not names or numbers) for your place i
 
 Tapping Messages, Gmail or WhatsApp on a contact hands that one number or address to that app, as you would expect.
 
-There is no server. Your contacts travel only between your browser and Google. The app stores your place in the cycle (contact IDs and counts) in the browser, and the Google sign-in token for the current session only.
+There is no server. Your contacts travel only between your browser and Google.
 
 ## Project layout
 
