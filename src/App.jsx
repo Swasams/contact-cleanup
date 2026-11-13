@@ -47,6 +47,8 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [popup, setPopup] = useState(null); // 'help' | 'note' | { kind: 'reach' | 'details', id, edit }
   const closePopup = useCallback(() => setPopup(null), []);
+  // details opened from the favorites list go back to that list
+  const closeDetails = useCallback(() => setPopup((p) => (p?.from === 'favorites' ? 'favorites' : null)), []);
   const [bonus, setBonus] = useState(null); // { level, picks: [ids] } while a bonus round is showing
   const lastDone = useRef(null);
   const detailsSave = useRef(null); // the details popup's save, for the check mark in its header
@@ -422,13 +424,13 @@ export default function App() {
         </Modal>
       )}
       {popup?.kind === 'details' && popupContact && (
-        <Modal key="details" title={popupContact.name} onClose={closePopup} onConfirm={() => detailsSave.current?.()}>
-          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tagOptions} isOn={isOn} onAddTag={addTag} onClose={closePopup} saveRef={detailsSave} />
+        <Modal key="details" title={popupContact.name} onClose={closeDetails} onConfirm={() => detailsSave.current?.()}>
+          <Details key={popupContact.id} contact={popupContact} startEditing={!!popup.edit} onSave={(draft) => saveContact(popupContact, draft)} tagOptions={tagOptions} isOn={isOn} onAddTag={addTag} onClose={closeDetails} saveRef={detailsSave} />
         </Modal>
       )}
       {popup === 'favorites' && (
-        <Modal key="favorites" title="Favorites" onClose={closePopup}>
-          <Favorites contacts={contacts} onToggle={setStar} />
+        <Modal key="favorites" title="Favorites" onClose={closePopup} onConfirm={closePopup}>
+          <Favorites contacts={contacts} onToggle={setStar} onOpen={(c) => setPopup({ kind: 'details', id: c.id, from: 'favorites' })} />
         </Modal>
       )}
       {popup === 'settings' && (
